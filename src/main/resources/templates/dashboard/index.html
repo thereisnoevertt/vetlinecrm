@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6" lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Дашборд — Ветлайн ВК</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<div th:replace="~{fragments :: navbar('dashboard')}"></div>
+
+<div class="container">
+  <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+  <div class="page-header">
+    <div>
+      <h1>Дашборд</h1>
+      <p class="text-muted" style="margin-top:2px">Оперативная сводка по отделу продаж</p>
+    </div>
+    <div class="period-tabs">
+      <span class="period-label text-muted">Период:</span>
+      <a th:href="@{/dashboard(period='week')}"
+         th:class="${period=='week'} ? 'pill pill-active' : 'pill'">Неделя</a>
+      <a th:href="@{/dashboard(period='month')}"
+         th:class="${period=='month'} ? 'pill pill-active' : 'pill'">Месяц</a>
+      <a th:href="@{/dashboard(period='quarter')}"
+         th:class="${period=='quarter'} ? 'pill pill-active' : 'pill'">Квартал</a>
+      <a th:href="@{/dashboard(period='year')}"
+         th:class="${period=='year'} ? 'pill pill-active' : 'pill'">Год</a>
+    </div>
+  </div>
+
+  <!-- KPI -->
+  <div class="kpi-grid-v2">
+    <div class="kpi-card-v2" data-color="#3b82f6">
+      <div class="kpi-label">Всего заявок за период</div>
+      <div class="kpi-value" th:text="${dash.totalCount}">0</div>
+      <div class="kpi-sub"
+           th:classappend="${dash.growthPct >= 0} ? ' kpi-up' : ' kpi-down'">
+        <span th:text="${dash.growthPct >= 0} ? '▲' : '▼'"></span>
+        <span th:text="${#numbers.formatDecimal(dash.growthPct,1,1)} + '% к прошлому периоду'"></span>
+      </div>
+    </div>
+
+    <div class="kpi-card-v2" data-color="#10b981">
+      <div class="kpi-label">Активные заявки</div>
+      <div class="kpi-value" th:text="${dash.activeCount}">0</div>
+      <div class="kpi-sub text-muted">сейчас в работе</div>
+    </div>
+
+    <div class="kpi-card-v2" data-color="#f59e0b">
+      <div class="kpi-label">Конверсия в выполненные</div>
+      <div class="kpi-value" th:text="${#numbers.formatDecimal(dash.conversionPct,1,1)} + '%'">0%</div>
+      <div class="kpi-sub text-muted"
+           th:text="|${dash.doneCount} из ${dash.totalCount} заявок|"></div>
+    </div>
+
+    <div class="kpi-card-v2" data-color="#a855f7">
+      <div class="kpi-label">Рост к прошлому периоду</div>
+      <div class="kpi-value"
+           th:text="(${dash.growthPct >= 0} ? '+' : '') + ${#numbers.formatDecimal(dash.growthPct,1,1)} + '%'"
+           th:classappend="${dash.growthPct >= 0} ? ' text-success' : ' text-danger'">0%</div>
+      <div class="kpi-sub text-muted"
+           th:text="'Прошлый период: ' + ${dash.prevCount} + ' заявок'"></div>
+    </div>
+  </div>
+
+  <!-- Линейный график + воронка -->
+  <div class="dash-row dash-row-2">
+    <div class="card">
+      <div class="card-header"><h3>Динамика обращений и закрытых заявок</h3></div>
+      <div class="card-body chart-wrap-md">
+        <canvas id="lineChart"></canvas>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h3>Воронка по статусам</h3></div>
+      <div class="card-body">
+        <div class="funnel" id="funnel"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- План/Факт + Топ менеджеры -->
+  <div class="dash-row dash-row-2">
+    <div class="card">
+      <div class="card-header"><h3>План / Факт</h3></div>
+      <div class="card-body">
+        <div class="pf-row">
+          <div class="pf-label">Количество заявок</div>
+          <div class="pf-progress">
+            <div class="pf-bar"
+                 th:with="pct=${dash.planTarget > 0 ? (dash.totalCount * 100 / dash.planTarget) : 0},
+                          pctC=${pct > 100 ? 100 : pct}"
+                 th:style="'width:' + ${pctC} + '%; background:#3b82f6'"></div>
+          </div>
+          <div class="pf-value">
+            <strong th:text="${dash.totalCount}">0</strong> /
+            <span th:text="${dash.planTarget > 0 ? dash.planTarget : '—'}">—</span>
+          </div>
+        </div>
+
+        <div class="pf-row">
+          <div class="pf-label">Выполненные</div>
+          <div class="pf-progress">
+            <div class="pf-bar"
+                 th:with="pct=${dash.totalCount > 0 ? (dash.doneCount * 100 / dash.totalCount) : 0}"
+                 th:style="'width:' + ${pct} + '%; background:#10b981'"></div>
+          </div>
+          <div class="pf-value">
+            <strong th:text="${dash.doneCount}">0</strong> /
+            <span th:text="${dash.totalCount}">0</span>
+          </div>
+        </div>
+
+        <div class="pf-row">
+          <div class="pf-label">Конверсия</div>
+          <div class="pf-progress">
+            <div class="pf-bar"
+                 th:style="'width:' + ${#numbers.formatDecimal(dash.conversionPct,1,0)} + '%; background:#a855f7'"></div>
+          </div>
+          <div class="pf-value">
+            <strong th:text="${#numbers.formatDecimal(dash.conversionPct,1,1)} + '%'">0%</strong>
+          </div>
+        </div>
+
+        <form th:action="@{/dashboard/plan}" method="post" class="plan-form" style="margin-top:14px">
+          <input type="hidden" name="year"  th:value="${#dates.year(#dates.createNow())}"/>
+          <input type="hidden" name="month" th:value="${period=='month'} ? ${#dates.month(#dates.createNow())} : ''"/>
+          <input type="number" name="target" class="input input-sm"
+                 placeholder="Установить план на период" min="1" style="width:200px"/>
+          <button class="btn btn-sm btn-outline">OK</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><h3>Топ менеджеры периода</h3></div>
+      <div class="card-body" style="padding:0">
+        <table class="table table-compact">
+          <thead>
+            <tr><th>Менеджер</th>
+                <th style="width:90px;text-align:right">Заявок</th>
+                <th style="width:90px;text-align:right">Закрыто</th></tr>
+          </thead>
+          <tbody>
+            <tr th:if="${dash.topManagers.isEmpty()}">
+              <td colspan="3" class="empty-row">Нет данных за период</td>
+            </tr>
+            <tr th:each="m : ${dash.topManagers}">
+              <td th:text="${m.fullName}"></td>
+              <td style="text-align:right" th:text="${m.total}">0</td>
+              <td style="text-align:right;color:#16a34a;font-weight:600"
+                  th:text="${m.done}">0</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script th:inline="javascript">
+  /*<![CDATA[*/
+  const days       = /*[[${dash.days}]]*/ [];
+  const newCounts  = /*[[${dash.dailyCounts}]]*/ [];
+  const doneCounts = /*[[${dash.dailyDoneCounts}]]*/ [];
+  const funnel     = /*[[${dash.byStatus}]]*/ {};
+  /*]]>*/
+
+  // ── Линейный график (новые / закрытые) ─────────────────────────────────
+  new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: days,
+      datasets: [
+        { label: 'Новые заявки', data: newCounts,
+          borderColor:'#3b82f6', backgroundColor:'rgba(59,130,246,.1)',
+          tension:.35, fill:true, pointRadius:3 },
+        { label: 'Закрытые заявки', data: doneCounts,
+          borderColor:'#16a34a', backgroundColor:'rgba(22,163,74,.08)',
+          tension:.35, fill:true, pointRadius:3 }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'top', labels:{ font:{ size:11 }, boxWidth:12 } } },
+      scales:{
+        y:{ beginAtZero:true, ticks:{ stepSize:1, font:{ size:11 } } },
+        x:{ ticks:{ font:{ size:10 } } }
+      }
+    }
+  });
+
+  // ── Воронка по статусам ───────────────────────────────────────────────
+  const palette = ['#1e3a8a','#2563eb','#3b82f6','#60a5fa','#93c5fd',
+                   '#a78bfa','#c4b5fd','#16a34a','#22c55e','#ef4444','#94a3b8'];
+  const root = document.getElementById('funnel');
+  const entries = Object.entries(funnel);
+  const max = Math.max(1, ...entries.map(e => e[1] || 0));
+  entries.forEach(([label, count], idx) => {
+    const pct = Math.max(8, (count / max) * 100);
+    const item = document.createElement('div');
+    item.className = 'funnel-item';
+    item.style.width = pct + '%';
+    item.style.background = palette[idx % palette.length];
+    item.innerHTML = '<span>' + label + '</span><strong>' + count + '</strong>';
+    root.appendChild(item);
+  });
+
+  // Автообновление каждые 60 сек (ТЗ Ф-09: ≤1 мин)
+  setTimeout(()=>location.reload(), 60_000);
+</script>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

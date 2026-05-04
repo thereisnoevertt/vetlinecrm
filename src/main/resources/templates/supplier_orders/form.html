@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Новый заказ поставщику — Ветлайн ВК</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}"/>
+</head>
+<body>
+<div th:replace="~{fragments :: navbar('supplier-orders')}"></div>
+<div class="container" style="max-width:880px">
+  <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+
+  <div class="page-header">
+    <div>
+      <a th:href="@{/supplier-orders}" class="back-link">← К списку заказов</a>
+      <h1>Сформировать заказ поставщику</h1>
+      <p class="text-muted" th:if="${ticket != null}">
+        На основании заявки <strong th:text="${ticket.number}"></strong>
+        — <span th:text="${ticket.client.fullName}"></span>
+      </p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form th:action="@{/supplier-orders/new}" method="post" id="orderForm">
+        <input type="hidden" name="ticketId" th:value="${ticket?.id}"/>
+
+        <div class="field-grid-2">
+          <div class="field">
+            <label>Поставщик <span class="req">*</span></label>
+            <select name="supplierId" class="input" required>
+              <option value="">— Выберите —</option>
+              <option th:each="s : ${suppliers}"
+                      th:value="${s.id}"
+                      th:text="${s.name + (s.country != null ? ' (' + s.country + ')' : '')}"></option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Заявка-основание</label>
+            <input type="text" class="input" disabled
+                   th:value="${ticket != null ? ticket.number + ' — ' + ticket.client.fullName : 'не привязана'}"/>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Примечание</label>
+          <textarea name="notes" class="input" rows="2" maxlength="1000"
+                    placeholder="Срочная поставка, требуется до ..."
+                    th:text="${ticket != null and ticket.description != null} ? ticket.description : ''"></textarea>
+        </div>
+
+        <hr class="divider"/>
+        <h3 class="section-title">Товарные позиции</h3>
+        <p class="text-muted" style="font-size:12px;margin-bottom:8px">
+          Цены не указываются: курсы валют и индивидуальные прайсы поставщиков
+          уточняются в момент подтверждения заказа.
+        </p>
+
+        <table class="table table-compact" id="itemsTable">
+          <thead>
+            <tr>
+              <th style="width:40px">№</th>
+              <th>Наименование товара <span class="req">*</span></th>
+              <th style="width:120px">Кол-во <span class="req">*</span></th>
+              <th style="width:110px">Ед. изм.</th>
+              <th style="width:40px"></th>
+            </tr>
+          </thead>
+          <tbody id="itemsBody">
+            <tr class="item-row">
+              <td class="row-num">1</td>
+              <td><input type="text" name="name" class="input input-sm" maxlength="300" required/></td>
+              <td><input type="number" name="quantity" class="input input-sm" step="0.01" min="0.01" required/></td>
+              <td>
+                <select name="unit" class="input input-sm">
+                  <option>шт.</option><option>упак.</option><option>компл.</option>
+                  <option>кг</option><option>л</option><option>м</option>
+                </select>
+              </td>
+              <td><button type="button" class="btn btn-outline btn-sm" onclick="removeRow(this)">×</button></td>
+            </tr>
+          </tbody>
+        </table>
+        <button type="button" class="btn btn-outline btn-sm" onclick="addRow()">+ Добавить позицию</button>
+
+        <div class="form-actions" style="margin-top:18px">
+          <a th:href="${ticket != null} ? @{/tickets/{id}(id=${ticket.id})} : @{/supplier-orders}"
+             class="btn btn-outline">Отмена</a>
+          <button type="submit" class="btn btn-primary">Сохранить заказ</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+function renumberRows() {
+  document.querySelectorAll('#itemsBody .row-num').forEach((td, i) => td.textContent = i + 1);
+}
+function addRow() {
+  const body  = document.getElementById('itemsBody');
+  const first = body.querySelector('.item-row');
+  const clone = first.cloneNode(true);
+  clone.querySelectorAll('input').forEach(i => i.value = '');
+  body.appendChild(clone);
+  renumberRows();
+}
+function removeRow(btn) {
+  const rows = document.querySelectorAll('#itemsBody .item-row');
+  if (rows.length === 1) return;
+  btn.closest('tr').remove();
+  renumberRows();
+}
+</script>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

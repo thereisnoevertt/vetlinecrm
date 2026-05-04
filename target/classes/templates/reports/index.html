@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6" lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Отчёты — Ветлайн ВК</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}"/>
+</head>
+<body>
+<div th:replace="~{fragments :: navbar('reports')}"></div>
+
+<div class="container" style="max-width:900px">
+  <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+  <div class="page-header"><h1>Отчёты</h1></div>
+  <p class="text-muted" style="margin-bottom:24px">
+    Выберите тип отчёта, задайте период и нажмите «xlsx» или «pdf».
+    <span th:if="${!isDirector}">
+      Вы видите данные только по своим заявкам.
+    </span>
+  </p>
+
+  <!-- Форма параметров -->
+  <div class="card">
+    <div class="card-header"><h3>Параметры формирования</h3></div>
+    <div class="card-body">
+      <form id="reportForm" method="get" class="report-form">
+        <div class="field-grid-3">
+          <div class="field">
+            <label>Дата с <span class="req">*</span></label>
+            <input type="date" id="fromDate" name="from" class="input" required
+                   th:value="${#dates.format(#dates.createNow(), 'yyyy-MM-01')}"/>
+          </div>
+          <div class="field">
+            <label>Дата по <span class="req">*</span></label>
+            <input type="date" id="toDate" name="to" class="input" required
+                   th:value="${#dates.format(#dates.createNow(), 'yyyy-MM-dd')}"/>
+          </div>
+          <div class="field" th:if="${isDirector}">
+            <label>Менеджер</label>
+            <select name="managerId" class="input">
+              <option value="">Все менеджеры</option>
+              <option th:each="m : ${managers}"
+                      th:value="${m.id}" th:text="${m.fullName}"></option>
+            </select>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Список отчётов -->
+  <div class="reports-list">
+
+    <div class="report-card">
+      <div class="report-info">
+        <div class="report-icon">📊</div>
+        <div>
+          <div class="report-name">О-01 — По статусам заявок</div>
+          <div class="report-desc text-muted">
+            Количество заявок в каждом статусе за период, доля от итога
+          </div>
+        </div>
+      </div>
+      <div class="report-actions">
+        <a class="btn btn-outline btn-sm" onclick="view('status')">👁 Просмотр</a>
+        <a class="btn btn-primary btn-sm" onclick="download('status','xlsx')">⬇ xlsx</a>
+        <a class="btn btn-secondary btn-sm" onclick="download('status','pdf')">⬇ pdf</a>
+      </div>
+    </div>
+
+    <div class="report-card">
+      <div class="report-info">
+        <div class="report-icon">📈</div>
+        <div>
+          <div class="report-name">О-02 — По конверсиям</div>
+          <div class="report-desc text-muted">
+            Доля выполненных заявок, активных и отменённых
+          </div>
+        </div>
+      </div>
+      <div class="report-actions">
+        <a class="btn btn-outline btn-sm" onclick="view('conversion')">👁 Просмотр</a>
+        <a class="btn btn-primary btn-sm" onclick="download('conversion','xlsx')">⬇ xlsx</a>
+        <a class="btn btn-secondary btn-sm" onclick="download('conversion','pdf')">⬇ pdf</a>
+      </div>
+    </div>
+
+    <div class="report-card">
+      <div class="report-info">
+        <div class="report-icon">🔀</div>
+        <div>
+          <div class="report-name">О-03 — По источникам обращений</div>
+          <div class="report-desc text-muted">
+            Распределение заявок по каналам: сайт, телефон, мессенджер, e-mail и др.
+          </div>
+        </div>
+      </div>
+      <div class="report-actions">
+        <a class="btn btn-outline btn-sm" onclick="view('sources')">👁 Просмотр</a>
+        <a class="btn btn-primary btn-sm" onclick="download('sources','xlsx')">⬇ xlsx</a>
+        <a class="btn btn-secondary btn-sm" onclick="download('sources','pdf')">⬇ pdf</a>
+      </div>
+    </div>
+
+    <div class="report-card">
+      <div class="report-info">
+        <div class="report-icon">🗂</div>
+        <div>
+          <div class="report-name">О-04 — По категориям товаров</div>
+          <div class="report-desc text-muted">
+            Количество заявок в разрезе категорий ветеринарного оборудования
+          </div>
+        </div>
+      </div>
+      <div class="report-actions">
+        <a class="btn btn-outline btn-sm" onclick="view('categories')">👁 Просмотр</a>
+        <a class="btn btn-primary btn-sm" onclick="download('categories','xlsx')">⬇ xlsx</a>
+        <a class="btn btn-secondary btn-sm" onclick="download('categories','pdf')">⬇ pdf</a>
+      </div>
+    </div>
+
+    <div class="report-card" th:if="${isDirector}">
+      <div class="report-info">
+        <div class="report-icon">👥</div>
+        <div>
+          <div class="report-name">О-05 — По эффективности менеджеров</div>
+          <div class="report-desc text-muted">
+            Сводный отчёт по всем менеджерам: распределение статусов (только для директора)
+          </div>
+        </div>
+      </div>
+      <div class="report-actions">
+        <a class="btn btn-outline btn-sm" onclick="view('managers')">👁 Просмотр</a>
+        <a class="btn btn-primary btn-sm" onclick="download('managers','xlsx')">⬇ xlsx</a>
+        <a class="btn btn-secondary btn-sm" onclick="download('managers','pdf')">⬇ pdf</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function buildQuery() {
+  const from = document.getElementById('fromDate').value;
+  const to   = document.getElementById('toDate').value;
+  if (!from || !to) { alert('Укажите период'); return null; }
+  const mgr  = document.querySelector('[name=managerId]');
+  const mgrId = (mgr && mgr.value) ? '&managerId=' + mgr.value : '';
+  return '?from=' + from + '&to=' + to + mgrId;
+}
+function download(type, fmt) {
+  const q = buildQuery(); if (!q) return;
+  const f = (fmt === 'pdf') ? 'pdf' : 'xlsx';
+  window.location = '/reports/export/' + type + q + '&format=' + f;
+}
+function view(type) {
+  const q = buildQuery(); if (!q) return;
+  window.location = '/reports/view/' + type + q;
+}
+</script>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

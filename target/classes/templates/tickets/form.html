@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Новая заявка — Ветлайн ВК</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}"/>
+</head>
+<body>
+<div th:replace="~{fragments :: navbar('all')}"></div>
+<div class="container" style="max-width:700px">
+  <div class="page-header">
+    <div>
+      <a th:href="@{/tickets}" class="back-link">← К списку заявок</a>
+      <h1>Новая заявка</h1>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <form th:action="@{/tickets/new}" method="post" th:object="${form}" novalidate>
+
+        <h3 class="section-title">Данные клиента</h3>
+        <div class="field">
+          <label>ФИО клиента <span class="req">*</span></label>
+          <input type="text" th:field="*{fullName}" class="input"
+                 placeholder="Иванов Иван Иванович" maxlength="200"/>
+          <span class="field-error" th:if="${#fields.hasErrors('fullName')}"
+                th:errors="*{fullName}"></span>
+        </div>
+        <div class="field-grid-2">
+          <div class="field">
+            <label>Телефон <span class="req">*</span></label>
+            <input type="tel" th:field="*{phone}" class="input"
+                   placeholder="+7(999)999-99-99"/>
+            <span class="field-error" th:if="${#fields.hasErrors('phone')}"
+                  th:errors="*{phone}"></span>
+          </div>
+          <div class="field">
+            <label>E-mail</label>
+            <input type="email" th:field="*{email}" class="input"
+                   placeholder="client@example.com"/>
+          </div>
+        </div>
+        <div class="field">
+          <label>Организация</label>
+          <input type="text" th:field="*{organization}" class="input"
+                 placeholder="ООО «Ветклиника Новосибирск»" maxlength="200"/>
+        </div>
+
+        <hr class="divider"/>
+        <h3 class="section-title">Параметры заявки</h3>
+        <div class="field-grid-2">
+          <div class="field">
+            <label>Источник обращения <span class="req">*</span></label>
+            <select th:field="*{sourceId}" class="input">
+              <option value="">— Выберите —</option>
+              <option th:each="s : ${sources}"
+                      th:value="${s.id}" th:text="${s.name}"></option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Категория товара</label>
+            <select th:field="*{categoryId}" class="input">
+              <option value="">— Не указана —</option>
+              <option th:each="c : ${categories}"
+                      th:value="${c.id}" th:text="${c.name}"></option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label>Описание потребности</label>
+          <textarea th:field="*{description}" class="input" rows="4"
+                    maxlength="2000" placeholder="Опишите потребность клиента..."></textarea>
+        </div>
+        <div class="field">
+          <label>Примечание</label>
+          <textarea th:field="*{noteClient}" class="input" rows="2"
+                    maxlength="1000" placeholder="Дополнительные заметки..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <a th:href="@{/tickets}" class="btn btn-outline">Отмена</a>
+          <button type="submit" class="btn btn-primary">Сохранить заявку</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>
