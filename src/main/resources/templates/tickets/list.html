@@ -4,115 +4,150 @@
 <head>
   <meta charset="UTF-8"/>
   <title th:text="${section=='archive'} ? 'Архив — Ветлайн ВК' :
-                   (section=='my' ? 'Мои заявки — Ветлайн ВК' : 'Все заявки — Ветлайн ВК')">
-    Заявки — Ветлайн ВК</title>
+                   (section=='my' ? 'Мои заявки — Ветлайн ВК' :
+                                    'Заявки — Ветлайн ВК')">Заявки</title>
   <link rel="stylesheet" th:href="@{/css/main.css}"/>
 </head>
 <body>
-<div th:replace="~{fragments :: navbar(${section})}"></div>
+<div class="app">
+  <div th:replace="~{fragments :: sidebar(${section})}"></div>
+  <div th:replace="~{fragments :: topbar(${section=='archive'} ? 'Архив' :
+                                          (section=='my' ? 'Мои заявки' : 'Заявки'))}"></div>
 
-<div class="container">
-  <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-  <div th:if="${error}"   class="alert alert-error"   th:text="${error}"></div>
-
-  <div class="page-header">
-    <h1 th:text="${section=='archive'} ? 'Архив заявок' :
-                  (section=='my' ? 'Мои заявки' : 'Все заявки')">Заявки</h1>
-    <div class="header-actions" th:if="${section != 'archive'}">
-      <a th:href="@{/tickets/my}"  class="btn btn-outline btn-sm"
-         th:classappend="${section=='my'} ? ' active-tab'"
-         sec:authorize="hasRole('MANAGER')">Мои</a>
-      <a th:href="@{/tickets}"     class="btn btn-outline btn-sm"
-         th:classappend="${section=='all'} ? ' active-tab'">Все</a>
-      <a th:href="@{/tickets/new}" class="btn btn-primary btn-sm"
-         sec:authorize="hasRole('MANAGER')">+ Новая заявка</a>
+  <main class="content">
+    <div th:if="${success}" class="alert alert-success">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <span th:text="${success}"></span>
     </div>
-  </div>
+    <div th:if="${error}" class="alert alert-error">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span th:text="${error}"></span>
+    </div>
 
-  <!-- Фильтры -->
-  <form th:action="${section=='my'} ? '/tickets/my' :
-                    (section=='archive' ? '/tickets/archive' : '/tickets')"
-        method="get" class="filter-bar">
-    <input type="text" name="search" class="input"
-           placeholder="Поиск: №, ФИО, телефон"
-           th:value="${search}" style="flex:2;min-width:180px"/>
+    <div class="page-head">
+      <div>
+        <h1 th:text="${section=='archive'} ? 'Архив заявок' :
+                      (section=='my' ? 'Мои заявки' : 'Заявки')">Заявки</h1>
+        <div class="lead">
+          <span th:if="${section=='archive'}">Закрытые и архивированные обращения клиентов.</span>
+          <span th:if="${section=='my'}">Заявки, в которых вы назначены ответственным менеджером.</span>
+          <span th:if="${section=='all'}">Сводный перечень активных заявок отдела продаж.</span>
+        </div>
+      </div>
+      <div class="page-actions">
+        <nav class="tabs" th:if="${section != 'archive'}">
+          <a th:href="@{/tickets/my}"
+             th:class="${section=='my'} ? 'active' : ''"
+             sec:authorize="hasRole('MANAGER')">Мои</a>
+          <a th:href="@{/tickets}" th:class="${section=='all'} ? 'active' : ''">Все</a>
+        </nav>
+        <a th:href="@{/tickets/new}" class="btn btn-primary btn-sm"
+           sec:authorize="hasRole('MANAGER')" th:if="${section != 'archive'}">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Новая заявка
+        </a>
+      </div>
+    </div>
 
-    <select name="status" class="input">
-      <option value="">Все статусы</option>
-      <option th:each="s : ${statuses}"
-              th:value="${s.name()}"
-              th:text="${s.displayName}"
-              th:selected="${s.name() == filterStatus}"></option>
-    </select>
+    <!-- Фильтры. URL формы и кнопки «Сбросить» вычисляется один раз и
+         используется обоими элементами, чтобы исключить любые сюрпризы
+         с разным разбором тернарного оператора в th:action / th:href. -->
+    <div th:with="actionUrl=${section=='archive' ? '/tickets/archive'
+                              : (section=='my'   ? '/tickets/my'
+                              :                    '/tickets')}">
+      <form th:action="@{__${actionUrl}__}" method="get" class="filter-bar">
+        <input type="text" name="search" class="input"
+               th:placeholder="${section=='archive'}
+                                ? 'Поиск: №, фамилия клиента, организация, телефон'
+                                : 'Поиск: №, ФИО, телефон'"
+               th:value="${search}" style="flex:2;min-width:240px"/>
 
-    <select name="managerId" class="input"
-            th:if="${isDirector}">
-      <option value="">Все менеджеры</option>
-      <option th:each="m : ${managers}"
-              th:value="${m.id}"
-              th:text="${m.fullName}"
-              th:selected="${m.id.toString() == filterManager}"></option>
-    </select>
+        <select name="status" class="input" style="max-width:200px">
+          <option value="">Все статусы</option>
+          <option th:each="s : ${statuses}"
+                  th:value="${s.name()}" th:text="${s.displayName}"
+                  th:selected="${s.name() == filterStatus}"></option>
+        </select>
 
-    <button type="submit" class="btn btn-secondary">Найти</button>
-    <a th:href="${section=='my'} ? '/tickets/my' :
-                 (section=='archive' ? '/tickets/archive' : '/tickets')"
-       class="btn btn-outline">Сбросить</a>
-  </form>
+        <select name="managerId" class="input" th:if="${isDirector}" style="max-width:220px">
+          <option value="">Все менеджеры</option>
+          <option th:each="m : ${managers}"
+                  th:value="${m.id}" th:text="${m.fullName}"
+                  th:selected="${m.id.toString() == filterManager}"></option>
+        </select>
 
-  <!-- Таблица -->
-  <div class="card">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>№ заявки</th>
-          <th>Дата</th>
-          <th>Клиент</th>
-          <th>Источник</th>
-          <th>Статус</th>
-          <th th:if="${isDirector or section=='all' or section=='archive'}">Менеджер</th>
-          <th>Обновлено</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr th:if="${tickets.isEmpty()}">
-          <td colspan="7" class="empty-row">Заявок не найдено</td>
-        </tr>
-        <tr th:each="t : ${tickets.content}"
-            class="tr-link"
-            th:attr="data-href=@{'/tickets/' + ${t.id}}">
-          <td><strong th:text="${t.number}"></strong></td>
-          <td th:text="${#temporals.format(t.createdAt,'dd.MM.yyyy HH:mm')}"></td>
-          <td>
-            <div th:text="${t.client.fullName}"></div>
-            <small class="text-muted" th:text="${t.client.phone}"></small>
-          </td>
-          <td th:text="${t.source != null ? t.source.name : '—'}"></td>
-          <td>
-            <span class="badge" th:classappend="${t.status.badgeClass}"
-                  th:text="${t.status.displayName}"></span>
-          </td>
-          <td th:if="${isDirector or section=='all' or section=='archive'}"
-              th:text="${t.manager.fullName}"></td>
-          <td th:text="${#temporals.format(t.updatedAt,'dd.MM.yyyy HH:mm')}"></td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+        <button type="submit" class="btn btn-primary btn-sm">Применить</button>
+        <a th:href="@{__${actionUrl}__}" class="btn btn-ghost btn-sm">Сбросить</a>
+      </form>
+    </div>
 
-  <!-- Пагинация -->
-  <div class="pagination" th:if="${tickets.totalPages > 1}">
-    <a class="btn btn-sm btn-outline"
-       th:unless="${tickets.first}"
-       th:href="@{${#httpServletRequest.requestURI}(page=${tickets.number-1},
-                   search=${search},status=${filterStatus},managerId=${filterManager})}">← Назад</a>
-    <span class="page-info"
-          th:text="'Страница ' + (${tickets.number+1}) + ' из ' + ${tickets.totalPages}"></span>
-    <a class="btn btn-sm btn-outline"
-       th:unless="${tickets.last}"
-       th:href="@{${#httpServletRequest.requestURI}(page=${tickets.number+1},
-                   search=${search},status=${filterStatus},managerId=${filterManager})}">Вперёд →</a>
-  </div>
+    <!-- Таблица -->
+    <div class="card">
+      <div class="card-body flush">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>№ заявки</th>
+              <th>Дата</th>
+              <th>Клиент</th>
+              <th>Источник</th>
+              <th>Статус</th>
+              <th th:if="${isDirector or section=='all' or section=='archive'}">Менеджер</th>
+              <th>Обновлено</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:if="${tickets.isEmpty()}" class="empty-row">
+              <td colspan="7">Заявок не найдено</td>
+            </tr>
+            <tr th:each="t : ${tickets.content}"
+                class="tr-link"
+                th:attr="data-href=@{'/tickets/' + ${t.id}}">
+              <td><span class="td-mono td-strong" th:text="${t.number}"></span></td>
+              <td th:text="${#temporals.format(t.createdAt,'dd.MM.yyyy HH:mm')}"></td>
+              <td>
+                <div class="td-strong" th:text="${t.client.fullName}"></div>
+                <div class="td-meta" th:text="${t.client.phone}"></div>
+              </td>
+              <td th:text="${t.source != null ? t.source.name : '—'}"></td>
+              <td>
+                <span class="badge" th:classappend="${t.status.badgeClass}"
+                      th:text="${t.status.displayName}"></span>
+              </td>
+              <td th:if="${isDirector or section=='all' or section=='archive'}"
+                  th:text="${t.manager.fullName}"></td>
+              <td class="td-meta"
+                  th:text="${#temporals.format(t.updatedAt,'dd.MM.yyyy HH:mm')}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="pagination" th:if="${tickets.totalPages > 1}">
+      <a class="btn btn-ghost btn-sm" th:unless="${tickets.first}"
+         th:href="@{${#httpServletRequest.requestURI}(page=${tickets.number-1},
+                     search=${search},status=${filterStatus},managerId=${filterManager})}">← Назад</a>
+      <span class="page-info"
+            th:text="'Страница ' + (${tickets.number+1}) + ' из ' + ${tickets.totalPages}"></span>
+      <a class="btn btn-ghost btn-sm" th:unless="${tickets.last}"
+         th:href="@{${#httpServletRequest.requestURI}(page=${tickets.number+1},
+                     search=${search},status=${filterStatus},managerId=${filterManager})}">Вперёд →</a>
+    </div>
+  </main>
 </div>
 <script th:src="@{/js/main.js}"></script>
 </body>

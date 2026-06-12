@@ -6,52 +6,65 @@
   <link rel="stylesheet" th:href="@{/css/main.css}"/>
 </head>
 <body>
-<div th:replace="~{fragments :: navbar('admin')}"></div>
-<div class="container" style="max-width:560px">
-  <div th:if="${error}" class="alert alert-error" th:text="${error}"></div>
+<div class="app">
+  <div th:replace="~{fragments :: sidebar('admin')}"></div>
+  <div th:replace="~{fragments :: topbar('Пользователь')}"></div>
 
-  <div class="page-header">
-    <div>
-      <a th:href="@{/admin/users}" class="back-link">← К списку</a>
-      <h1 th:text="${user != null} ? 'Редактировать пользователя' : 'Новый пользователь'">Пользователь</h1>
+  <main class="content content-narrow">
+    <div th:if="${error}" class="alert alert-error"><span th:text="${error}"></span></div>
+
+    <div class="page-head">
+      <div>
+        <a th:href="@{/admin/users}" class="back-link">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          К списку пользователей
+        </a>
+        <h1 th:text="${user != null} ? 'Редактировать пользователя' : 'Новый пользователь'">Пользователь</h1>
+      </div>
     </div>
-  </div>
-  <div class="card">
-    <div class="card-body">
-      <form th:action="${user != null} ? @{/admin/users/{id}/edit(id=${user.id})} : @{/admin/users/new}"
-            method="post">
-        <div class="field">
-          <label>ФИО <span class="req">*</span></label>
-          <input type="text" name="fullName" class="input" required
-                 th:value="${user?.fullName}" maxlength="200"/>
-        </div>
-        <div class="field" th:if="${user == null}">
-          <label>E-mail (логин) <span class="req">*</span></label>
-          <input type="email" name="email" class="input" required
-                 placeholder="manager@vetline.ru"/>
-        </div>
-        <div class="field" th:if="${user == null}">
-          <label>Пароль <span class="req">*</span></label>
-          <input type="password" name="password" class="input" required
-                 placeholder="Минимум 6 символов" minlength="6"/>
-        </div>
-        <div class="field">
-          <label>Роль <span class="req">*</span></label>
-          <select name="role" class="input" required>
-            <option th:each="r : ${roles}"
-                    th:value="${r.name()}"
-                    th:text="${r.displayName}"
-                    th:selected="${user != null and user.role == r}"></option>
-          </select>
-        </div>
-        <div class="form-actions">
-          <a th:href="@{/admin/users}" class="btn btn-outline">Отмена</a>
-          <button type="submit" class="btn btn-primary"
-                  th:text="${user != null} ? 'Сохранить' : 'Создать'">Создать</button>
-        </div>
-      </form>
+
+    <div class="card">
+      <div class="card-body">
+        <form th:action="${user != null} ? @{/admin/users/{id}/edit(id=${user.id})} : @{/admin/users/new}"
+              method="post">
+          <div class="field">
+            <label>ФИО <span class="req">*</span></label>
+            <input type="text" name="fullName" class="input" required
+                   th:value="${user?.fullName}" maxlength="200"/>
+          </div>
+          <div class="field" th:if="${user == null}">
+            <label>Электронная почта (логин) <span class="req">*</span></label>
+            <input type="email" name="email" class="input" required
+                   placeholder="manager@vetline.ru"/>
+          </div>
+          <div class="field" th:if="${user == null}">
+            <label>Пароль <span class="req">*</span></label>
+            <input type="password" name="password" class="input" required
+                   placeholder="Минимум 6 символов" minlength="6"/>
+            <div class="field-help">Пользователь сможет сменить пароль после первого входа.</div>
+          </div>
+          <div class="field">
+            <label>Роль <span class="req">*</span></label>
+            <select name="role" class="input" required>
+              <option th:each="r : ${roles}"
+                      th:value="${r.name()}"
+                      th:text="${r.displayName}"
+                      th:selected="${user != null and user.role == r}"></option>
+            </select>
+          </div>
+          <div class="form-actions">
+            <a th:href="@{/admin/users}" class="btn">Отмена</a>
+            <button type="submit" class="btn btn-primary"
+                    th:text="${user != null} ? 'Сохранить' : 'Создать'">Создать</button>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
+  </main>
 </div>
 <script th:src="@{/js/main.js}"></script>
 </body>

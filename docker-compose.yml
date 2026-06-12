@@ -1,0 +1,44 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: vetline_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: vetline_crm
+      POSTGRES_USER: vetline
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vetline_secret_2025}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U vetline -d vetline_crm"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: vetline_crm
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/vetline_crm
+      SPRING_DATASOURCE_USERNAME: vetline
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-vetline_secret_2025}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME}
+      WEBHOOK_SECRET_TOKEN: ${WEBHOOK_SECRET_TOKEN:-webhook_secret_2025}
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8080}
+      SPRING_PROFILES_ACTIVE: prod
+    ports:
+      - "8080:8080"
+    volumes:
+      - app_logs:/app/logs
+
+volumes:
+  postgres_data:
+  app_logs:

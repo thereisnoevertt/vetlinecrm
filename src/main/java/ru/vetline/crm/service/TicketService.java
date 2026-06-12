@@ -114,6 +114,61 @@ public class TicketService {
         return ticket;
     }
 
+    // ── Редактирование содержания заявки (Прецедент №3 — расширение) ─────────
+    /**
+     * Обновляет текстовые поля карточки заявки. Правила:
+     *  • description и noteClient — редактируются всегда, пока заявка не в архиве;
+     *  • noteManager — редактируется только на статусах DONE и CANCELLED
+     *    (до архивирования);
+     *  • архивированные заявки неизменны.
+     * В журнал истории добавляется одна запись со списком фактически
+     * изменённых полей.
+     */
+    @Transactional
+    public Ticket updateContent(UUID ticketId,
+                                String description,
+                                String noteClient,
+                                String noteManager,
+                                User user) {
+        Ticket t = findById(ticketId);
+        if (t.isArchived())
+            throw new IllegalStateException(
+                "Архивированная заявка недоступна для редактирования");
+
+        boolean canEditManagerNote =
+                t.getStatus() == TicketStatus.DONE ||
+                t.getStatus() == TicketStatus.CANCELLED;
+
+        java.util.List<String> changed = new java.util.ArrayList<>();
+        if (!java.util.Objects.equals(nullToEmpty(t.getDescription()),
+                                      nullToEmpty(description))) {
+            t.setDescription(description);
+            changed.add("описание потребности");
+        }
+        if (!java.util.Objects.equals(nullToEmpty(t.getNoteClient()),
+                                      nullToEmpty(noteClient))) {
+            t.setNoteClient(noteClient);
+            changed.add("примечание клиента");
+        }
+        if (canEditManagerNote &&
+            !java.util.Objects.equals(nullToEmpty(t.getNoteManager()),
+                                      nullToEmpty(noteManager))) {
+            t.setNoteManager(noteManager);
+            changed.add("итоговый комментарий менеджера");
+        }
+        if (changed.isEmpty()) return t;
+
+        t.setUpdatedAt(LocalDateTime.now());
+        t = ticketRepo.save(t);
+        addHistory(t, TicketHistory.EventType.FIELD_UPDATE, null, null, user,
+                "Обновлены поля: " + String.join("; ", changed));
+        audit.log(user, "TICKET_CONTENT_UPDATE", "Ticket", t.getId(),
+                String.join(", ", changed));
+        return t;
+    }
+
+    private static String nullToEmpty(String s) { return s == null ? "" : s; }
+
     // ── Чтение ────────────────────────────────────────────────────────────────
     @Transactional(readOnly = true)
     public Ticket findById(UUID id) {

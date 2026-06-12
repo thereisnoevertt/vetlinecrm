@@ -7,136 +7,163 @@
   <link rel="stylesheet" th:href="@{/css/main.css}"/>
 </head>
 <body>
-<div th:replace="~{fragments :: navbar('reports')}"></div>
+<div class="app">
+  <div th:replace="~{fragments :: sidebar('reports')}"></div>
+  <div th:replace="~{fragments :: topbar('Отчёты')}"></div>
 
-<div class="container" style="max-width:900px">
-  <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
-  <div class="page-header"><h1>Отчёты</h1></div>
-  <p class="text-muted" style="margin-bottom:24px">
-    Выберите тип отчёта, задайте период и нажмите «xlsx» или «pdf».
-    <span th:if="${!isDirector}">
-      Вы видите данные только по своим заявкам.
-    </span>
-  </p>
+  <main class="content content-medium">
+    <div th:if="${error}" class="alert alert-error"><span th:text="${error}"></span></div>
 
-  <!-- Форма параметров -->
-  <div class="card">
-    <div class="card-header"><h3>Параметры формирования</h3></div>
-    <div class="card-body">
-      <form id="reportForm" method="get" class="report-form">
-        <div class="field-grid-3">
-          <div class="field">
-            <label>Дата с <span class="req">*</span></label>
-            <input type="date" id="fromDate" name="from" class="input" required
-                   th:value="${#dates.format(#dates.createNow(), 'yyyy-MM-01')}"/>
-          </div>
-          <div class="field">
-            <label>Дата по <span class="req">*</span></label>
-            <input type="date" id="toDate" name="to" class="input" required
-                   th:value="${#dates.format(#dates.createNow(), 'yyyy-MM-dd')}"/>
-          </div>
-          <div class="field" th:if="${isDirector}">
-            <label>Менеджер</label>
-            <select name="managerId" class="input">
-              <option value="">Все менеджеры</option>
-              <option th:each="m : ${managers}"
-                      th:value="${m.id}" th:text="${m.fullName}"></option>
-            </select>
-          </div>
+    <div class="page-head">
+      <div>
+        <h1>Отчёты</h1>
+        <div class="lead">
+          Выберите тип отчёта, задайте период и выгрузите данные.
+          <span th:if="${!isDirector}">Вы видите данные только по своим заявкам.</span>
         </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Список отчётов -->
-  <div class="reports-list">
-
-    <div class="report-card">
-      <div class="report-info">
-        <div class="report-icon">📊</div>
-        <div>
-          <div class="report-name">О-01 — По статусам заявок</div>
-          <div class="report-desc text-muted">
-            Количество заявок в каждом статусе за период, доля от итога
-          </div>
-        </div>
-      </div>
-      <div class="report-actions">
-        <a class="btn btn-outline btn-sm" onclick="view('status')">👁 Просмотр</a>
-        <a class="btn btn-primary btn-sm" onclick="download('status','xlsx')">⬇ xlsx</a>
-        <a class="btn btn-secondary btn-sm" onclick="download('status','pdf')">⬇ pdf</a>
       </div>
     </div>
 
-    <div class="report-card">
-      <div class="report-info">
-        <div class="report-icon">📈</div>
-        <div>
-          <div class="report-name">О-02 — По конверсиям</div>
-          <div class="report-desc text-muted">
-            Доля выполненных заявок, активных и отменённых
+    <div class="card">
+      <div class="card-head"><h3>Параметры формирования</h3></div>
+      <div class="card-body">
+        <form id="reportForm" method="get">
+          <div class="field-grid-3">
+            <div class="field">
+              <label>Дата с <span class="req">*</span></label>
+              <input type="date" id="fromDate" name="from" class="input" required
+                     th:value="${#dates.format(#dates.createNow(), 'yyyy-MM-01')}"/>
+            </div>
+            <div class="field">
+              <label>Дата по <span class="req">*</span></label>
+              <input type="date" id="toDate" name="to" class="input" required
+                     th:value="${#dates.format(#dates.createNow(), 'yyyy-MM-dd')}"/>
+            </div>
+            <div class="field" th:if="${isDirector}">
+              <label>Менеджер</label>
+              <select name="managerId" class="input">
+                <option value="">Все менеджеры</option>
+                <option th:each="m : ${managers}"
+                        th:value="${m.id}" th:text="${m.fullName}"></option>
+              </select>
+            </div>
           </div>
-        </div>
-      </div>
-      <div class="report-actions">
-        <a class="btn btn-outline btn-sm" onclick="view('conversion')">👁 Просмотр</a>
-        <a class="btn btn-primary btn-sm" onclick="download('conversion','xlsx')">⬇ xlsx</a>
-        <a class="btn btn-secondary btn-sm" onclick="download('conversion','pdf')">⬇ pdf</a>
+        </form>
       </div>
     </div>
 
-    <div class="report-card">
-      <div class="report-info">
-        <div class="report-icon">🔀</div>
-        <div>
-          <div class="report-name">О-03 — По источникам обращений</div>
-          <div class="report-desc text-muted">
-            Распределение заявок по каналам: сайт, телефон, мессенджер, e-mail и др.
+    <div class="reports-list">
+
+      <div class="report-card">
+        <div class="report-info">
+          <div class="report-icon">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"/>
+              <line x1="12" y1="20" x2="12" y2="4"/>
+              <line x1="6"  y1="20" x2="6"  y2="14"/>
+              <line x1="3"  y1="20" x2="21" y2="20"/>
+            </svg>
+          </div>
+          <div>
+            <div class="report-name">О-01 — По статусам заявок</div>
+            <div class="report-desc">Количество заявок в каждом статусе за период, доля от итога</div>
           </div>
         </div>
-      </div>
-      <div class="report-actions">
-        <a class="btn btn-outline btn-sm" onclick="view('sources')">👁 Просмотр</a>
-        <a class="btn btn-primary btn-sm" onclick="download('sources','xlsx')">⬇ xlsx</a>
-        <a class="btn btn-secondary btn-sm" onclick="download('sources','pdf')">⬇ pdf</a>
-      </div>
-    </div>
-
-    <div class="report-card">
-      <div class="report-info">
-        <div class="report-icon">🗂</div>
-        <div>
-          <div class="report-name">О-04 — По категориям товаров</div>
-          <div class="report-desc text-muted">
-            Количество заявок в разрезе категорий ветеринарного оборудования
-          </div>
+        <div class="report-actions">
+          <a class="btn btn-sm" onclick="view('status')">Просмотр</a>
+          <a class="btn btn-soft btn-sm" onclick="download('status','xlsx')">XLSX</a>
+          <a class="btn btn-soft btn-sm" onclick="download('status','pdf')">PDF</a>
         </div>
       </div>
-      <div class="report-actions">
-        <a class="btn btn-outline btn-sm" onclick="view('categories')">👁 Просмотр</a>
-        <a class="btn btn-primary btn-sm" onclick="download('categories','xlsx')">⬇ xlsx</a>
-        <a class="btn btn-secondary btn-sm" onclick="download('categories','pdf')">⬇ pdf</a>
-      </div>
-    </div>
 
-    <div class="report-card" th:if="${isDirector}">
-      <div class="report-info">
-        <div class="report-icon">👥</div>
-        <div>
-          <div class="report-name">О-05 — По эффективности менеджеров</div>
-          <div class="report-desc text-muted">
-            Сводный отчёт по всем менеджерам: распределение статусов (только для директора)
+      <div class="report-card">
+        <div class="report-info">
+          <div class="report-icon">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+          <div>
+            <div class="report-name">О-02 — По конверсиям</div>
+            <div class="report-desc">Доля выполненных заявок, активных и отменённых</div>
           </div>
         </div>
+        <div class="report-actions">
+          <a class="btn btn-sm" onclick="view('conversion')">Просмотр</a>
+          <a class="btn btn-soft btn-sm" onclick="download('conversion','xlsx')">XLSX</a>
+          <a class="btn btn-soft btn-sm" onclick="download('conversion','pdf')">PDF</a>
+        </div>
       </div>
-      <div class="report-actions">
-        <a class="btn btn-outline btn-sm" onclick="view('managers')">👁 Просмотр</a>
-        <a class="btn btn-primary btn-sm" onclick="download('managers','xlsx')">⬇ xlsx</a>
-        <a class="btn btn-secondary btn-sm" onclick="download('managers','pdf')">⬇ pdf</a>
-      </div>
-    </div>
 
-  </div>
+      <div class="report-card">
+        <div class="report-info">
+          <div class="report-icon">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
+              <path d="M2 12h20"/>
+            </svg>
+          </div>
+          <div>
+            <div class="report-name">О-03 — По источникам обращений</div>
+            <div class="report-desc">Распределение заявок по каналам: сайт, телефон, мессенджер, e-mail и др.</div>
+          </div>
+        </div>
+        <div class="report-actions">
+          <a class="btn btn-sm" onclick="view('sources')">Просмотр</a>
+          <a class="btn btn-soft btn-sm" onclick="download('sources','xlsx')">XLSX</a>
+          <a class="btn btn-soft btn-sm" onclick="download('sources','pdf')">PDF</a>
+        </div>
+      </div>
+
+      <div class="report-card">
+        <div class="report-info">
+          <div class="report-icon">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div>
+            <div class="report-name">О-04 — По категориям товаров</div>
+            <div class="report-desc">Количество заявок в разрезе категорий ветеринарного оборудования</div>
+          </div>
+        </div>
+        <div class="report-actions">
+          <a class="btn btn-sm" onclick="view('categories')">Просмотр</a>
+          <a class="btn btn-soft btn-sm" onclick="download('categories','xlsx')">XLSX</a>
+          <a class="btn btn-soft btn-sm" onclick="download('categories','pdf')">PDF</a>
+        </div>
+      </div>
+
+      <div class="report-card" th:if="${isDirector}">
+        <div class="report-info">
+          <div class="report-icon">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+          </div>
+          <div>
+            <div class="report-name">О-05 — По эффективности менеджеров</div>
+            <div class="report-desc">Сводный отчёт по всем менеджерам — распределение статусов (только для директора)</div>
+          </div>
+        </div>
+        <div class="report-actions">
+          <a class="btn btn-sm" onclick="view('managers')">Просмотр</a>
+          <a class="btn btn-soft btn-sm" onclick="download('managers','xlsx')">XLSX</a>
+          <a class="btn btn-soft btn-sm" onclick="download('managers','pdf')">PDF</a>
+        </div>
+      </div>
+
+    </div>
+  </main>
 </div>
 
 <script>

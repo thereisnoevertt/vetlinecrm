@@ -7,166 +7,248 @@
   <link rel="stylesheet" th:href="@{/css/main.css}"/>
 </head>
 <body>
-<div th:replace="~{fragments :: navbar('all')}"></div>
+<div class="app">
+  <div th:replace="~{fragments :: sidebar('all')}"></div>
+  <div th:replace="~{fragments :: topbar('Карточка заявки')}"></div>
 
-<div class="container">
-  <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-  <div th:if="${error}"   class="alert alert-error"   th:text="${error}"></div>
-
-  <div class="page-header">
-    <div>
-      <a th:href="@{/tickets}" class="back-link">← Все заявки</a>
-      <h1>Заявка <span th:text="${ticket.number}"></span></h1>
+  <main class="content">
+    <div th:if="${success}" class="alert alert-success">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      <span th:text="${success}"></span>
     </div>
-    <div class="header-actions" sec:authorize="hasRole('MANAGER')"
-         th:if="${!ticket.archived}">
-      <!-- Смена статуса (Ф-05) -->
-      <form th:action="@{/tickets/{id}/status(id=${ticket.id})}"
-            method="post" class="inline-form"
-            th:if="${!allowedTransitions.isEmpty()}">
-        <select name="newStatus" class="input input-sm">
-          <option value="" disabled selected>Изменить статус...</option>
-          <option th:each="s : ${allowedTransitions}"
-                  th:value="${s.name()}"
-                  th:text="${s.displayName}"></option>
-        </select>
-        <button class="btn btn-primary btn-sm">Применить</button>
-      </form>
-      <!-- Уведомить клиента (Ф-06) -->
-      <form th:action="@{/tickets/{id}/notify(id=${ticket.id})}" method="post">
-        <button class="btn btn-secondary btn-sm"
-                th:disabled="${!canNotify}"
-                th:title="${!canNotify} ? 'Заполните VK ID клиента' : 'Отправить уведомление через VK'">
-          📩 Уведомить
-        </button>
-      </form>
-      <!-- Сформировать заказ поставщику (Прецедент №4) -->
-      <a th:href="@{/supplier-orders/new(ticketId=${ticket.id})}"
-         class="btn btn-outline btn-sm"
-         title="Создать заказ поставщику на основании этой заявки">
-        📦 Заказ поставщику
-      </a>
+    <div th:if="${error}" class="alert alert-error">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span th:text="${error}"></span>
     </div>
-  </div>
 
-  <div class="detail-grid">
-    <!-- ═══ ЛЕВАЯ КОЛОНКА ═══════════════════════════════════════════════════ -->
-    <div>
-      <!-- Реквизиты заявки -->
-      <div class="card">
-        <div class="card-header">
-          <h3>Реквизиты заявки</h3>
-          <span class="badge" th:classappend="${ticket.status.badgeClass}"
-                th:text="${ticket.status.displayName}"></span>
-        </div>
-        <div class="card-body field-grid-2">
-          <div class="field"><label>№ заявки</label>
-            <span th:text="${ticket.number}"></span></div>
-          <div class="field"><label>Дата создания</label>
-            <span th:text="${#temporals.format(ticket.createdAt,'dd.MM.yyyy HH:mm')}"></span></div>
-          <div class="field"><label>Источник</label>
-            <span th:text="${ticket.source != null ? ticket.source.name : '—'}"></span></div>
-          <div class="field"><label>Категория</label>
-            <span th:text="${ticket.category != null ? ticket.category.name : '—'}"></span></div>
-          <div class="field"><label>Ответственный менеджер</label>
-            <span th:text="${ticket.manager.fullName}"></span></div>
-          <div class="field"><label>Последнее обновление</label>
-            <span th:text="${#temporals.format(ticket.updatedAt,'dd.MM.yyyy HH:mm')}"></span></div>
-        </div>
+    <div class="page-head">
+      <div>
+        <a th:href="@{/tickets}" class="back-link">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          К списку заявок
+        </a>
+        <h1>
+          <span class="text-mono">№<span th:text="${ticket.number}">VL-0000</span></span>
+          <span class="badge no-dot" th:classappend="${ticket.status.badgeClass}"
+                th:text="${ticket.status.displayName}"
+                style="vertical-align:middle;margin-left:8px;font-size:12px"></span>
+        </h1>
+        <div class="lead" th:text="${ticket.client.fullName}">Клиент</div>
       </div>
-
-      <!-- Клиент -->
-      <div class="card">
-        <div class="card-header"><h3>Клиент</h3></div>
-        <div class="card-body field-grid-2">
-          <div class="field"><label>ФИО</label>
-            <span th:text="${ticket.client.fullName}"></span></div>
-          <div class="field"><label>Телефон</label>
-            <span th:text="${ticket.client.phone}"></span></div>
-          <div class="field"><label>E-mail</label>
-            <span th:text="${ticket.client.email ?: '—'}"></span></div>
-          <div class="field"><label>Организация</label>
-            <span th:text="${ticket.client.organization ?: '—'}"></span></div>
-          <div class="field">
-            <label>VK ID
-              <span th:if="${!canNotify}" class="warn-icon"
-                    title="Заполните для отправки уведомлений">⚠</span>
-            </label>
-            <span th:text="${ticket.client.vkId ?: 'Не указан'}"></span>
-          </div>
-        </div>
-        <!-- Форма обновления VK ID (Ф-06) -->
-        <div class="card-body" sec:authorize="hasRole('MANAGER')"
-             th:if="${!ticket.archived}">
-          <form th:action="@{/tickets/{id}/client/vk(id=${ticket.id})}"
-                method="post" class="inline-form">
-            <input type="number" name="vkId" class="input input-sm"
-                   placeholder="VK ID клиента"
-                   th:value="${ticket.client.vkId}" style="width:180px"/>
-            <button class="btn btn-outline btn-sm">Сохранить VK ID</button>
-          </form>
-        </div>
-      </div>
-
-      <!-- Содержание -->
-      <div class="card">
-        <div class="card-header"><h3>Содержание</h3></div>
-        <div class="card-body">
-          <div class="field"><label>Описание потребности</label>
-            <p class="field-text" th:text="${ticket.description ?: '—'}"></p></div>
-          <div class="field"><label>Примечание клиента</label>
-            <p class="field-text" th:text="${ticket.noteClient ?: '—'}"></p></div>
-          <div class="field"><label>Итоговый комментарий менеджера</label>
-            <p class="field-text" th:text="${ticket.noteManager ?: '—'}"></p></div>
-        </div>
-      </div>
-
-      <!-- Архивация (Ф-07) -->
-      <div class="card" th:if="${canArchive}" sec:authorize="hasRole('MANAGER')">
-        <div class="card-header"><h3>Закрыть заявку</h3></div>
-        <div class="card-body">
-          <form th:action="@{/tickets/{id}/archive(id=${ticket.id})}" method="post">
-            <div class="field">
-              <label>Финальный комментарий</label>
-              <textarea name="comment" class="input" rows="3"
-                        placeholder="Кратко опишите результат..."></textarea>
-            </div>
-            <button class="btn btn-danger"
-                    onclick="return confirm('Архивировать заявку? Действие необратимо.')">
-              Закрыть и архивировать
-            </button>
-          </form>
-        </div>
+      <div class="page-actions" sec:authorize="hasRole('MANAGER')"
+           th:if="${!ticket.archived}">
+        <form th:action="@{/tickets/{id}/status(id=${ticket.id})}"
+              method="post" class="inline-form"
+              th:if="${!allowedTransitions.isEmpty()}">
+          <select name="newStatus" class="input input-sm" style="min-width:200px">
+            <option value="" disabled selected hidden>Изменить статус...</option>
+            <option th:each="s : ${allowedTransitions}"
+                    th:value="${s.name()}" th:text="${s.displayName}"></option>
+          </select>
+          <button class="btn btn-primary btn-sm">Применить</button>
+        </form>
+        <form th:action="@{/tickets/{id}/notify(id=${ticket.id})}" method="post"
+              class="inline-form">
+          <button class="btn btn-sm" type="submit"
+                  th:disabled="${!canNotify}"
+                  th:title="${!canNotify} ? 'Заполните VK ID клиента' : 'Отправить уведомление через VK'">
+            <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+            Уведомить
+          </button>
+        </form>
+        <a th:href="@{/supplier-orders/new(ticketId=${ticket.id})}" class="btn btn-sm"
+           title="Создать заказ поставщику">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+            <line x1="12" y1="22.08" x2="12" y2="12"/>
+          </svg>
+          Заказ поставщику
+        </a>
       </div>
     </div>
 
-    <!-- ═══ ПРАВАЯ КОЛОНКА: ИСТОРИЯ ═════════════════════════════════════════ -->
-    <div class="detail-aside">
-      <div class="card" style="height:100%">
-        <div class="card-header"><h3>История изменений</h3></div>
-        <div class="history-scroll">
-          <div th:if="${ticket.history.isEmpty()}" class="empty-row">История пуста</div>
-          <div th:each="h : ${ticket.history}" class="history-item">
-            <div class="history-meta">
-              <span class="history-date"
-                    th:text="${#temporals.format(h.createdAt,'dd.MM HH:mm')}"></span>
-              <span class="history-who"
-                    th:text="${h.user != null ? h.user.fullName : 'Система'}"></span>
-            </div>
-            <div class="history-desc" th:text="${h.description}"></div>
-            <div th:if="${h.statusFrom != null and h.statusTo != null}"
-                 class="history-transition">
-              <span class="badge badge-xs" th:classappend="${h.statusFrom.badgeClass}"
-                    th:text="${h.statusFrom.displayName}"></span>
-              <span>→</span>
-              <span class="badge badge-xs" th:classappend="${h.statusTo.badgeClass}"
-                    th:text="${h.statusTo.displayName}"></span>
+    <div class="detail-grid">
+      <div>
+        <!-- Реквизиты заявки -->
+        <div class="card">
+          <div class="card-head"><h3>Реквизиты заявки</h3></div>
+          <div class="card-body">
+            <div class="field-grid-2">
+              <div class="field"><label>Номер заявки</label>
+                <div class="field-text text-mono" th:text="${ticket.number}"></div></div>
+              <div class="field"><label>Дата создания</label>
+                <div class="field-text" th:text="${#temporals.format(ticket.createdAt,'dd.MM.yyyy HH:mm')}"></div></div>
+              <div class="field"><label>Источник</label>
+                <div class="field-text" th:text="${ticket.source != null ? ticket.source.name : '—'}"></div></div>
+              <div class="field"><label>Категория</label>
+                <div class="field-text" th:text="${ticket.category != null ? ticket.category.name : '—'}"></div></div>
+              <div class="field"><label>Ответственный менеджер</label>
+                <div class="field-text" th:text="${ticket.manager.fullName}"></div></div>
+              <div class="field"><label>Последнее обновление</label>
+                <div class="field-text" th:text="${#temporals.format(ticket.updatedAt,'dd.MM.yyyy HH:mm')}"></div></div>
             </div>
           </div>
         </div>
+
+        <!-- Клиент -->
+        <div class="card">
+          <div class="card-head"><h3>Клиент</h3></div>
+          <div class="card-body">
+            <div class="field-grid-2">
+              <div class="field"><label>ФИО</label>
+                <div class="field-text" th:text="${ticket.client.fullName}"></div></div>
+              <div class="field"><label>Телефон</label>
+                <div class="field-text text-mono" th:text="${ticket.client.phone}"></div></div>
+              <div class="field"><label>Электронная почта</label>
+                <div class="field-text" th:text="${ticket.client.email ?: '—'}"></div></div>
+              <div class="field"><label>Организация</label>
+                <div class="field-text" th:text="${ticket.client.organization ?: '—'}"></div></div>
+              <div class="field"><label>VK ID
+                  <span th:if="${!canNotify}" class="warn-icon"
+                        title="Заполните для отправки уведомлений">⚠</span>
+                </label>
+                <div class="field-text text-mono"
+                     th:text="${ticket.client.vkId ?: 'Не указан'}"></div></div>
+            </div>
+            <!-- Форма обновления VK ID -->
+            <div sec:authorize="hasRole('MANAGER')" th:if="${!ticket.archived}"
+                 style="margin-top:8px;padding-top:14px;border-top:1px solid var(--line-2)">
+              <form th:action="@{/tickets/{id}/client/vk(id=${ticket.id})}"
+                    method="post" class="inline-form">
+                <input type="number" name="vkId" class="input input-sm"
+                       placeholder="VK ID клиента"
+                       th:value="${ticket.client.vkId}" style="width:180px"/>
+                <button class="btn btn-sm">Сохранить VK ID</button>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Содержание (с редактированием) -->
+        <div class="card">
+          <div class="card-head"><h3>Содержание</h3></div>
+          <!-- Архив — только чтение -->
+          <div class="card-body" th:if="${ticket.archived}">
+            <div class="field"><label>Описание потребности</label>
+              <div class="field-text" th:text="${ticket.description ?: '—'}"></div></div>
+            <div class="field"><label>Примечание клиента</label>
+              <div class="field-text" th:text="${ticket.noteClient ?: '—'}"></div></div>
+            <div class="field"><label>Итоговый комментарий менеджера</label>
+              <div class="field-text" th:text="${ticket.noteManager ?: '—'}"></div></div>
+          </div>
+          <!-- Менеджер, активная заявка — редактирование -->
+          <div class="card-body" sec:authorize="hasRole('MANAGER')"
+               th:if="${!ticket.archived}"
+               th:with="canEditManagerNote=${ticket.status.name() == 'DONE' or ticket.status.name() == 'CANCELLED'}">
+            <form th:action="@{/tickets/{id}/content(id=${ticket.id})}" method="post">
+              <div class="field">
+                <label>Описание потребности</label>
+                <textarea name="description" class="input" rows="4"
+                          maxlength="2000"
+                          placeholder="Опишите потребность клиента..."
+                          th:text="${ticket.description}"></textarea>
+              </div>
+              <div class="field">
+                <label>Примечание клиента</label>
+                <textarea name="noteClient" class="input" rows="2"
+                          maxlength="1000"
+                          placeholder="Дополнительные заметки..."
+                          th:text="${ticket.noteClient}"></textarea>
+              </div>
+              <div class="field">
+                <label>Итоговый комментарий менеджера</label>
+                <textarea name="noteManager" class="input" rows="3"
+                          maxlength="2000"
+                          th:readonly="${!canEditManagerNote}"
+                          th:placeholder="${canEditManagerNote}
+                                          ? 'Опишите итог обработки заявки...'
+                                          : 'Поле станет доступно после перевода в статус «Выполнена» или «Отменена клиентом»'"
+                          th:text="${ticket.noteManager}"></textarea>
+                <div class="field-help" th:unless="${canEditManagerNote}">
+                  Заполняется только при финальных статусах «Выполнена» и «Отменена клиентом».
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="submit" class="btn btn-primary btn-sm">Сохранить</button>
+              </div>
+            </form>
+          </div>
+          <!-- Прочие роли — чтение -->
+          <div class="card-body" sec:authorize="!hasRole('MANAGER')"
+               th:if="${!ticket.archived}">
+            <div class="field"><label>Описание потребности</label>
+              <div class="field-text" th:text="${ticket.description ?: '—'}"></div></div>
+            <div class="field"><label>Примечание клиента</label>
+              <div class="field-text" th:text="${ticket.noteClient ?: '—'}"></div></div>
+            <div class="field"><label>Итоговый комментарий менеджера</label>
+              <div class="field-text" th:text="${ticket.noteManager ?: '—'}"></div></div>
+          </div>
+        </div>
+
+        <!-- Архивация -->
+        <div class="card" th:if="${canArchive}" sec:authorize="hasRole('MANAGER')">
+          <div class="card-head"><h3>Закрыть заявку</h3></div>
+          <div class="card-body">
+            <p class="text-muted mb-3" style="font-size:13px">
+              Перед закрытием убедитесь, что заполнен итоговый комментарий
+              менеджера в блоке «Содержание» выше.
+            </p>
+            <form th:action="@{/tickets/{id}/archive(id=${ticket.id})}" method="post">
+              <button class="btn btn-danger"
+                      onclick="return confirm('Архивировать заявку? Действие необратимо.')">
+                Закрыть и архивировать
+              </button>
+            </form>
+          </div>
+        </div>
       </div>
+
+      <!-- ─── История изменений ──────────────────────────────────────── -->
+      <aside class="detail-aside">
+        <div class="card">
+          <div class="card-head"><h3>История изменений</h3></div>
+          <div class="history-scroll">
+            <div th:if="${ticket.history.isEmpty()}" class="empty-row" style="padding:32px;text-align:center;color:var(--muted-2)">История пуста</div>
+            <div th:each="h : ${ticket.history}" class="history-item">
+              <div class="history-meta">
+                <span class="history-date"
+                      th:text="${#temporals.format(h.createdAt,'dd.MM HH:mm')}"></span>
+                <span class="history-who"
+                      th:text="${h.user != null ? h.user.fullName : 'Система'}"></span>
+              </div>
+              <div class="history-desc" th:text="${h.description}"></div>
+              <div th:if="${h.statusFrom != null and h.statusTo != null}"
+                   class="history-transition">
+                <span class="badge badge-xs no-dot" th:classappend="${h.statusFrom.badgeClass}"
+                      th:text="${h.statusFrom.displayName}"></span>
+                <span class="text-muted">→</span>
+                <span class="badge badge-xs no-dot" th:classappend="${h.statusTo.badgeClass}"
+                      th:text="${h.statusTo.displayName}"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
     </div>
-  </div>
+  </main>
 </div>
 <script th:src="@{/js/main.js}"></script>
 </body>

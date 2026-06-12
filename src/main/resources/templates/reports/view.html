@@ -3,65 +3,75 @@
       xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6" lang="ru">
 <head>
   <meta charset="UTF-8"/>
-  <title th:text="${report.title} + ' — Ветлайн ВК'">Отчёт — Ветлайн ВК</title>
+  <title th:text="${report.title} + ' — Ветлайн ВК'">Отчёт</title>
   <link rel="stylesheet" th:href="@{/css/main.css}"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
-<div th:replace="~{fragments :: navbar('reports')}"></div>
+<div class="app">
+  <div th:replace="~{fragments :: sidebar('reports')}"></div>
+  <div th:replace="~{fragments :: topbar('Отчёт')}"></div>
 
-<div class="container">
-  <div class="page-header">
-    <h1 th:text="${report.title}">Отчёт</h1>
-    <div>
-      <a class="btn btn-outline btn-sm" th:href="@{/reports}">← К списку отчётов</a>
-      <a class="btn btn-primary btn-sm"
-         th:href="@{|/reports/export/${type}|(from=${from},to=${to},managerId=${managerId},format='xlsx')}">
-        ⬇ xlsx
-      </a>
-      <a class="btn btn-secondary btn-sm"
-         th:href="@{|/reports/export/${type}|(from=${from},to=${to},managerId=${managerId},format='pdf')}">
-        ⬇ pdf
-      </a>
-    </div>
-  </div>
-
-  <div th:if="${!report.rows.isEmpty()}" class="report-grid">
-    <div class="card">
-      <div class="card-header"><h3>Табличное представление</h3></div>
-      <div class="card-body">
-        <table class="table">
-          <thead>
-          <tr>
-            <th th:each="h : ${report.headers}" th:text="${h}">Колонка</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr th:each="row : ${report.rows}">
-            <td th:each="cell : ${row}" th:text="${cell}">—</td>
-          </tr>
-          </tbody>
-          <tfoot th:if="${report.totalLabel != null}">
-          <tr>
-            <th th:text="${report.totalLabel}" th:colspan="${report.headers.size() - 1}">Итого</th>
-            <th th:text="${report.totalValue}">0</th>
-          </tr>
-          </tfoot>
-        </table>
+  <main class="content content-medium">
+    <div class="page-head">
+      <div>
+        <a th:href="@{/reports}" class="back-link">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          К списку отчётов
+        </a>
+        <h1 th:text="${report.title}">Отчёт</h1>
+      </div>
+      <div class="page-actions">
+        <a class="btn btn-sm"
+           th:href="@{|/reports/export/${type}|(from=${from},to=${to},managerId=${managerId},format='xlsx')}">XLSX</a>
+        <a class="btn btn-sm"
+           th:href="@{|/reports/export/${type}|(from=${from},to=${to},managerId=${managerId},format='pdf')}">PDF</a>
       </div>
     </div>
 
-    <div class="card">
-      <div class="card-header"><h3>Визуализация</h3></div>
-      <div class="card-body chart-wrap">
-        <canvas id="reportChart"></canvas>
+    <div th:if="${!report.rows.isEmpty()}" class="report-grid">
+      <div class="card">
+        <div class="card-head"><h3>Табличное представление</h3></div>
+        <div class="card-body flush">
+          <table class="table">
+            <thead>
+              <tr>
+                <th th:each="h : ${report.headers}" th:text="${h}">Колонка</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="row : ${report.rows}">
+                <td th:each="cell : ${row}" th:text="${cell}">—</td>
+              </tr>
+            </tbody>
+            <tfoot th:if="${report.totalLabel != null}">
+              <tr>
+                <th th:text="${report.totalLabel}" th:colspan="${report.headers.size() - 1}">Итого</th>
+                <th class="td-strong" th:text="${report.totalValue}">0</th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h3>Визуализация</h3></div>
+        <div class="card-body">
+          <div class="chart-wrap">
+            <canvas id="reportChart"></canvas>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <div th:if="${report.rows.isEmpty()}" class="card">
-    <div class="card-body text-muted">За указанный период данных нет.</div>
-  </div>
+    <div th:if="${report.rows.isEmpty()}" class="card">
+      <div class="card-body text-muted">За указанный период данных нет.</div>
+    </div>
+  </main>
 </div>
 
 <script th:inline="javascript">
@@ -74,39 +84,39 @@
   if (rows && rows.length) {
     const labels = rows.map(r => r[0]);
     const values = rows.map(r => parseFloat(String(r[1]).replace(',', '.')) || 0);
-    const colors = ['#3b82f6','#f59e0b','#10b981','#6366f1','#ec4899',
-                    '#14b8a6','#f97316','#8b5cf6','#22c55e','#ef4444','#94a3b8'];
+    const colors = ['#2E426A','#D97706','#16A34A','#7C3AED','#0EA5E9',
+                    '#DC2626','#52525B','#243454','#65A30D','#0F766E','#A1A1AA'];
     let chartType, dataset;
     if (reportType === 'sources' || reportType === 'categories') {
       chartType = 'doughnut';
-      dataset = { data: values, backgroundColor: colors };
-    } else if (reportType === 'conversion') {
-      chartType = 'bar';
-      dataset = { label: 'Значение', data: values, backgroundColor: colors };
+      dataset = { data: values, backgroundColor: colors, borderColor: '#fff', borderWidth: 2 };
     } else {
       chartType = 'bar';
-      dataset = { label: headers[1] || 'Количество', data: values, backgroundColor: colors };
+      dataset = { label: headers[1] || 'Количество', data: values,
+                  backgroundColor: '#2E426A', borderRadius: 6, maxBarThickness: 36 };
     }
 
     new Chart(document.getElementById('reportChart'), {
       type: chartType,
       data: { labels: labels, datasets: [dataset] },
       options: {
-        responsive: true,
-        maintainAspectRatio: false,
+        responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { position: chartType === 'doughnut' ? 'right' : 'top',
-                    display: chartType === 'doughnut',
-                    labels: { boxWidth: 12, font: { size: 11 } } }
+          legend: {
+            display: chartType === 'doughnut',
+            position: 'right',
+            labels: { boxWidth: 12, font: { size: 12 }, padding: 12 }
+          }
         },
-        scales: chartType === 'doughnut' ? {} :
-                { y: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } } },
-                  x: { ticks: { font: { size: 11 } } } }
+        scales: chartType === 'doughnut' ? {} : {
+          y: { beginAtZero: true, ticks: { precision: 0, font: { size: 11 } },
+               grid: { color: '#F1F1F3' } },
+          x: { ticks: { font: { size: 11 } }, grid: { display: false } }
+        }
       }
     });
   }
 </script>
-
 <script th:src="@{/js/main.js}"></script>
 </body>
 </html>

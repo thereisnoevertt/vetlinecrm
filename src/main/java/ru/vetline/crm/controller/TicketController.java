@@ -170,10 +170,14 @@ public class TicketController {
         if (ticket.getClient().getVkId() == null) {
             ra.addFlashAttribute("error",
                     "VK ID клиента не заполнен. Откройте карточку клиента и введите ID.");
-        } else {
-            notifService.sendNotification(ticket, resolve(principal));
-            ra.addFlashAttribute("success", "Уведомление поставлено в очередь отправки");
+            return "redirect:/tickets/" + id;
         }
+        // Передаём только идентификатор — текст уведомления будет
+        // сформирован в момент фактической отправки по актуальному
+        // статусу заявки (см. NotificationService.doSend).
+        notifService.sendNotification(id, resolve(principal).getId());
+        ra.addFlashAttribute("success",
+                "Уведомление поставлено в очередь отправки");
         return "redirect:/tickets/" + id;
     }
 
@@ -191,6 +195,24 @@ public class TicketController {
             ra.addFlashAttribute("error", e.getMessage());
             return "redirect:/tickets/" + id;
         }
+    }
+
+    // ── Редактирование содержания заявки ─────────────────────────────────────
+    @PostMapping("/{id}/content")
+    public String updateContent(@PathVariable UUID id,
+                                @RequestParam(required = false) String description,
+                                @RequestParam(required = false) String noteClient,
+                                @RequestParam(required = false) String noteManager,
+                                RedirectAttributes ra,
+                                @AuthenticationPrincipal UserDetails principal) {
+        try {
+            ticketService.updateContent(id, description, noteClient, noteManager,
+                    resolve(principal));
+            ra.addFlashAttribute("success", "Изменения сохранены");
+        } catch (Exception e) {
+            ra.addFlashAttribute("error", e.getMessage());
+        }
+        return "redirect:/tickets/" + id;
     }
 
     // ── Редактирование VK ID клиента ─────────────────────────────────────────

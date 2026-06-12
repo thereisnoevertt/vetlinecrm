@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6" lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Клиенты — Ветлайн ВК</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}"/>
+</head>
+<body>
+<div class="app">
+  <div th:replace="~{fragments :: sidebar('clients')}"></div>
+  <div th:replace="~{fragments :: topbar('Клиенты')}"></div>
+
+  <main class="content">
+    <div class="page-head">
+      <div>
+        <h1>Клиенты</h1>
+        <div class="lead">Клиентская база предприятия и связанные с клиентами заявки.</div>
+      </div>
+    </div>
+
+    <form th:action="@{/clients}" method="get" class="filter-bar">
+      <input type="text" name="search" class="input"
+             placeholder="Поиск: ФИО, телефон, организация, e-mail"
+             th:value="${search}" style="flex:2;min-width:240px"/>
+      <button type="submit" class="btn btn-primary btn-sm">Применить</button>
+      <a th:href="@{/clients}" class="btn btn-ghost btn-sm">Сбросить</a>
+    </form>
+
+    <div class="card">
+      <div class="card-body flush">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>ФИО</th>
+              <th>Телефон</th>
+              <th>Организация</th>
+              <th>E-mail</th>
+              <th style="text-align:right">Заявок</th>
+              <th>Добавлен</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:if="${clients.isEmpty()}" class="empty-row">
+              <td colspan="6">Клиентов не найдено</td>
+            </tr>
+            <tr th:each="c : ${clients.content}"
+                class="tr-link"
+                th:attr="data-href=@{'/clients/' + ${c.id}}">
+              <td><span class="td-strong" th:text="${c.fullName}"></span></td>
+              <td><span class="td-mono" th:text="${c.phone}"></span></td>
+              <td th:text="${c.organization != null and !c.organization.isBlank() ? c.organization : '—'}"></td>
+              <td class="td-meta" th:text="${c.email != null and !c.email.isBlank() ? c.email : '—'}"></td>
+              <td style="text-align:right">
+                <span class="badge no-dot badge-frozen"
+                      th:text="${ticketCounts.containsKey(c.id) ? ticketCounts.get(c.id) : 0}"></span>
+              </td>
+              <td class="td-meta" th:text="${#temporals.format(c.createdAt,'dd.MM.yyyy')}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="pagination" th:if="${clients.totalPages > 1}">
+      <a class="btn btn-ghost btn-sm" th:unless="${clients.first}"
+         th:href="@{/clients(page=${clients.number-1},search=${search})}">← Назад</a>
+      <span class="page-info"
+            th:text="'Страница ' + (${clients.number+1}) + ' из ' + ${clients.totalPages}"></span>
+      <a class="btn btn-ghost btn-sm" th:unless="${clients.last}"
+         th:href="@{/clients(page=${clients.number+1},search=${search})}">Вперёд →</a>
+    </div>
+  </main>
+</div>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

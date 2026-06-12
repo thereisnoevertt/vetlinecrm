@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity6" lang="ru">
+<head>
+  <meta charset="UTF-8"/>
+  <title th:text="${client.fullName} + ' — Ветлайн ВК'">Клиент</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}"/>
+</head>
+<body>
+<div class="app">
+  <div th:replace="~{fragments :: sidebar('clients')}"></div>
+  <div th:replace="~{fragments :: topbar('Карточка клиента')}"></div>
+
+  <main class="content content-medium">
+    <div class="page-head">
+      <div>
+        <a th:href="@{/clients}" class="back-link">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          К списку клиентов
+        </a>
+        <h1 th:text="${client.fullName}">Клиент</h1>
+        <div class="lead" th:if="${client.organization != null and !client.organization.isBlank()}"
+             th:text="${client.organization}"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Реквизиты клиента</h3></div>
+      <div class="card-body">
+        <div class="field-grid-2">
+          <div class="field"><label>ФИО</label>
+            <div class="field-text" th:text="${client.fullName}"></div></div>
+          <div class="field"><label>Телефон</label>
+            <div class="field-text text-mono" th:text="${client.phone}"></div></div>
+          <div class="field"><label>Электронная почта</label>
+            <div class="field-text" th:text="${client.email ?: '—'}"></div></div>
+          <div class="field"><label>Организация</label>
+            <div class="field-text" th:text="${client.organization ?: '—'}"></div></div>
+          <div class="field"><label>VK ID</label>
+            <div class="field-text text-mono" th:text="${client.vkId ?: '—'}"></div></div>
+          <div class="field"><label>Добавлен</label>
+            <div class="field-text" th:text="${#temporals.format(client.createdAt,'dd.MM.yyyy HH:mm')}"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h3>Заявки клиента</h3>
+        <span class="badge no-dot badge-frozen" th:text="${tickets.size()}"></span>
+      </div>
+      <div class="card-body flush">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>№ заявки</th>
+              <th>Дата</th>
+              <th>Источник</th>
+              <th>Категория</th>
+              <th>Статус</th>
+              <th>Менеджер</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:if="${tickets.isEmpty()}" class="empty-row">
+              <td colspan="6">У клиента нет заявок</td>
+            </tr>
+            <tr th:each="t : ${tickets}"
+                class="tr-link"
+                th:attr="data-href=@{'/tickets/' + ${t.id}}">
+              <td><span class="td-mono td-strong" th:text="${t.number}"></span></td>
+              <td th:text="${#temporals.format(t.createdAt,'dd.MM.yyyy HH:mm')}"></td>
+              <td th:text="${t.source != null ? t.source.name : '—'}"></td>
+              <td th:text="${t.category != null ? t.category.name : '—'}"></td>
+              <td>
+                <span class="badge" th:classappend="${t.status.badgeClass}"
+                      th:text="${t.status.displayName}"></span>
+              </td>
+              <td th:text="${t.manager.fullName}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+<script th:src="@{/js/main.js}"></script>
+</body>
+</html>

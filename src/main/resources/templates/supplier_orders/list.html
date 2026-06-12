@@ -7,181 +7,171 @@
   <link rel="stylesheet" th:href="@{/css/main.css}"/>
 </head>
 <body>
-<div th:replace="~{fragments :: navbar('supplier-orders')}"></div>
+<div class="app">
+  <div th:replace="~{fragments :: sidebar('supplier-orders')}"></div>
+  <div th:replace="~{fragments :: topbar('Заказы поставщикам')}"></div>
 
-<div class="container">
-  <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-  <div th:if="${error}"   class="alert alert-error"   th:text="${error}"></div>
+  <main class="content">
+    <div th:if="${success}" class="alert alert-success"><span th:text="${success}"></span></div>
+    <div th:if="${error}" class="alert alert-error"><span th:text="${error}"></span></div>
 
-  <div class="page-header">
-    <h1>Заказы поставщикам</h1>
-    <div class="header-actions">
-      <a th:href="@{/supplier-orders/new}" class="btn btn-primary btn-sm"
-         sec:authorize="hasAnyRole('MANAGER','DIRECTOR')">+ Новый заказ</a>
+    <div class="page-head">
+      <div>
+        <h1>Заказы поставщикам</h1>
+        <div class="lead">Внешние закупки на основании клиентских заявок и самостоятельные заказы.</div>
+      </div>
+      <div class="page-actions">
+        <a th:href="@{/supplier-orders/new}" class="btn btn-primary btn-sm"
+           sec:authorize="hasAnyRole('MANAGER','DIRECTOR')">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Новый заказ
+        </a>
+      </div>
     </div>
-  </div>
 
-  <!-- Фильтры -->
-  <form method="get" class="filter-bar" action="/supplier-orders">
-    <div class="field" style="margin:0;flex:1;min-width:180px">
-      <label>Поставщик</label>
-      <select name="supplierId" class="input">
+    <form method="get" action="/supplier-orders" class="filter-bar">
+      <select name="supplierId" class="input" style="max-width:240px">
         <option value="">Все поставщики</option>
         <option th:each="s : ${suppliers}"
                 th:value="${s.id}" th:text="${s.name}"
                 th:selected="${filterSupplier != null and s.id == filterSupplier}"></option>
       </select>
-    </div>
-    <div class="field" style="margin:0;flex:1;min-width:160px">
-      <label>Статус заказа</label>
-      <select name="status" class="input">
+      <select name="status" class="input" style="max-width:200px">
         <option value="">Все статусы</option>
         <option th:each="st : ${statuses}"
                 th:value="${st.name()}" th:text="${st.displayName}"
                 th:selected="${st.name() == filterStatus}"></option>
       </select>
-    </div>
-    <div class="field" style="margin:0">
-      <label>Период с</label>
-      <input type="date" name="from" class="input" th:value="${from}"/>
-    </div>
-    <div class="field" style="margin:0">
-      <label>Период по</label>
-      <input type="date" name="to" class="input" th:value="${to}"/>
-    </div>
-    <button class="btn btn-secondary" style="align-self:flex-end">Применить</button>
-    <a href="/supplier-orders" class="btn btn-outline" style="align-self:flex-end">Сбросить</a>
-  </form>
+      <input type="date" name="from" class="input" th:value="${from}" style="max-width:160px"/>
+      <input type="date" name="to"   class="input" th:value="${to}"   style="max-width:160px"/>
+      <button class="btn btn-primary btn-sm">Применить</button>
+      <a href="/supplier-orders" class="btn btn-ghost btn-sm">Сбросить</a>
+    </form>
 
-  <!-- KPI -->
-  <div class="so-kpi-grid">
-    <div class="so-kpi" data-color="#3b82f6">
-      <div class="so-kpi-label">Заказов за период</div>
-      <div class="so-kpi-value" th:text="${countPeriod}">0</div>
-      <div class="so-kpi-sub" th:text="${monthLabel}">—</div>
-    </div>
-    <div class="so-kpi" data-color="#f59e0b">
-      <div class="so-kpi-label">Ожидают подтверждения</div>
-      <div class="so-kpi-value" th:text="${awaitingCount}">0</div>
-      <div class="so-kpi-sub">поставщики</div>
-    </div>
-  </div>
-
-  <!-- Таблица -->
-  <div class="card">
-    <table class="table">
-      <thead>
-        <tr>
-          <th>№ заказа</th>
-          <th>Дата</th>
-          <th>Поставщик</th>
-          <th>Заявка</th>
-          <th>Позиций</th>
-          <th>Статус</th>
-          <th>Менеджер</th>
-          <th></th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr th:if="${orders.isEmpty()}">
-          <td colspan="8" class="empty-row">Заказов не найдено</td>
-        </tr>
-        <tr th:each="o : ${orders.content}"
-            th:classappend="${selectedOrder != null and selectedOrder.id == o.id} ? ' selected-row'">
-          <td>
-            <a class="link-strong"
-               th:href="@{/supplier-orders(supplierId=${filterSupplier},status=${filterStatus},
-                                           from=${from},to=${to},selected=${o.id})}"
-               th:text="${o.number}">№</a>
-          </td>
-          <td th:text="${#temporals.format(o.createdAt,'dd.MM.yyyy')}"></td>
-          <td><strong th:text="${o.supplier.name}"></strong></td>
-          <td>
-            <a th:if="${o.ticket != null}" class="link-strong"
-               th:href="@{/tickets/{id}(id=${o.ticket.id})}"
-               th:text="${'#' + o.ticket.number}"></a>
-            <span th:if="${o.ticket == null}" class="text-muted">—</span>
-          </td>
-          <td th:text="${o.items.size()}">0</td>
-          <td>
-            <span class="badge" th:classappend="${o.status.badgeClass}"
-                  th:text="${o.status.displayName}"></span>
-          </td>
-          <td th:text="${o.manager.fullName}"></td>
-          <td>
-            <a class="btn btn-outline btn-sm"
-               th:href="@{/supplier-orders/{id}(id=${o.id})}">Открыть</a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-
-  <!-- Детали выбранного заказа -->
-  <div class="card" th:if="${selectedOrder != null}" style="margin-top:16px">
-    <div class="card-header">
-      <h3>📦 Детали заказа <span th:text="${selectedOrder.number}"></span>
-        <span class="text-muted" style="font-weight:400">(выбранный)</span>
-      </h3>
-      <span class="badge" th:classappend="${selectedOrder.status.badgeClass}"
-            th:text="${selectedOrder.status.displayName}"></span>
-    </div>
-    <div class="card-body">
-      <div class="field-grid-3" style="margin-bottom:16px">
-        <div class="field">
-          <label>Поставщик</label>
-          <span th:text="${selectedOrder.supplier.name}"></span>
-        </div>
-        <div class="field">
-          <label>Заявка-основание</label>
-          <a th:if="${selectedOrder.ticket != null}"
-             th:href="@{/tickets/{id}(id=${selectedOrder.ticket.id})}"
-             th:text="${'#' + selectedOrder.ticket.number + ' — ' + selectedOrder.ticket.client.fullName}"></a>
-          <span th:if="${selectedOrder.ticket == null}" class="text-muted">не привязана</span>
-        </div>
-        <div class="field">
-          <label>Дата создания</label>
-          <span th:text="${#temporals.format(selectedOrder.createdAt,'dd.MM.yyyy, HH:mm')}"></span>
-        </div>
-        <div class="field">
-          <label>Ответственный</label>
-          <span th:text="${selectedOrder.manager.fullName}"></span>
-        </div>
-        <div class="field" style="grid-column:span 2">
-          <label>Примечание</label>
-          <span th:text="${selectedOrder.notes ?: '—'}"></span>
-        </div>
+    <div class="so-kpi-grid">
+      <div class="so-kpi">
+        <div class="so-kpi-label">Заказов за период</div>
+        <div class="so-kpi-value" th:text="${countPeriod}">0</div>
+        <div class="so-kpi-sub" th:text="${monthLabel}">—</div>
       </div>
-
-      <table class="table table-compact">
-        <thead>
-          <tr><th style="width:40px">№</th><th>Наименование товара</th>
-              <th style="width:90px;text-align:right">Кол-во</th>
-              <th style="width:90px">Ед. изм.</th></tr>
-        </thead>
-        <tbody>
-          <tr th:each="it,iter : ${selectedOrder.items}">
-            <td th:text="${iter.index + 1}"></td>
-            <td th:text="${it.name}"></td>
-            <td style="text-align:right" th:text="${#numbers.formatDecimal(it.quantity,1,2)}"></td>
-            <td th:text="${it.unit}"></td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="so-kpi" data-color="warning">
+        <div class="so-kpi-label">Ожидают подтверждения</div>
+        <div class="so-kpi-value" th:text="${awaitingCount}">0</div>
+        <div class="so-kpi-sub">поставщики</div>
+      </div>
     </div>
-  </div>
 
-  <!-- Пагинация -->
-  <div class="pagination" th:if="${orders.totalPages > 1}">
-    <a class="btn btn-sm btn-outline" th:unless="${orders.first}"
-       th:href="@{/supplier-orders(page=${orders.number-1},supplierId=${filterSupplier},
-                  status=${filterStatus},from=${from},to=${to})}">← Назад</a>
-    <span class="page-info"
-          th:text="'Страница ' + (${orders.number+1}) + ' из ' + ${orders.totalPages}"></span>
-    <a class="btn btn-sm btn-outline" th:unless="${orders.last}"
-       th:href="@{/supplier-orders(page=${orders.number+1},supplierId=${filterSupplier},
-                  status=${filterStatus},from=${from},to=${to})}">Вперёд →</a>
-  </div>
+    <div class="card">
+      <div class="card-body flush">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>№ заказа</th>
+              <th>Дата</th>
+              <th>Поставщик</th>
+              <th>Заявка</th>
+              <th>Позиций</th>
+              <th>Статус</th>
+              <th>Менеджер</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:if="${orders.isEmpty()}" class="empty-row">
+              <td colspan="8">Заказов не найдено</td>
+            </tr>
+            <tr th:each="o : ${orders.content}"
+                th:classappend="${selectedOrder != null and selectedOrder.id == o.id} ? ' selected-row'">
+              <td>
+                <a class="link-strong"
+                   th:href="@{/supplier-orders(supplierId=${filterSupplier},status=${filterStatus},
+                                               from=${from},to=${to},selected=${o.id})}"
+                   th:text="${o.number}">№</a>
+              </td>
+              <td th:text="${#temporals.format(o.createdAt,'dd.MM.yyyy')}"></td>
+              <td><span class="td-strong" th:text="${o.supplier.name}"></span></td>
+              <td>
+                <a th:if="${o.ticket != null}" class="link-strong"
+                   th:href="@{/tickets/{id}(id=${o.ticket.id})}"
+                   th:text="${o.ticket.number}"></a>
+                <span th:if="${o.ticket == null}" class="text-muted">—</span>
+              </td>
+              <td th:text="${o.items.size()}">0</td>
+              <td>
+                <span class="badge" th:classappend="${o.status.badgeClass}"
+                      th:text="${o.status.displayName}"></span>
+              </td>
+              <td th:text="${o.manager.fullName}"></td>
+              <td>
+                <a class="btn btn-ghost btn-sm"
+                   th:href="@{/supplier-orders/{id}(id=${o.id})}">Открыть</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card" th:if="${selectedOrder != null}">
+      <div class="card-head">
+        <h3>Детали заказа <span class="text-mono" th:text="${selectedOrder.number}"></span>
+          <span class="text-muted" style="font-weight:400">(выбранный)</span>
+        </h3>
+        <span class="badge no-dot" th:classappend="${selectedOrder.status.badgeClass}"
+              th:text="${selectedOrder.status.displayName}"></span>
+      </div>
+      <div class="card-body">
+        <div class="field-grid-3 mb-3">
+          <div class="field"><label>Поставщик</label>
+            <div class="field-text" th:text="${selectedOrder.supplier.name}"></div></div>
+          <div class="field"><label>Заявка-основание</label>
+            <a th:if="${selectedOrder.ticket != null}" class="link-strong"
+               th:href="@{/tickets/{id}(id=${selectedOrder.ticket.id})}"
+               th:text="${selectedOrder.ticket.number + ' — ' + selectedOrder.ticket.client.fullName}"></a>
+            <span th:if="${selectedOrder.ticket == null}" class="text-muted">не привязана</span>
+          </div>
+          <div class="field"><label>Создан</label>
+            <div class="field-text" th:text="${#temporals.format(selectedOrder.createdAt,'dd.MM.yyyy, HH:mm')}"></div></div>
+          <div class="field"><label>Ответственный</label>
+            <div class="field-text" th:text="${selectedOrder.manager.fullName}"></div></div>
+          <div class="field" style="grid-column:span 2"><label>Примечание</label>
+            <div class="field-text" th:text="${selectedOrder.notes ?: '—'}"></div></div>
+        </div>
+
+        <table class="table table-compact">
+          <thead>
+            <tr><th style="width:40px">№</th><th>Наименование товара</th>
+                <th style="width:100px;text-align:right">Кол-во</th>
+                <th style="width:100px">Ед. изм.</th></tr>
+          </thead>
+          <tbody>
+            <tr th:each="it,iter : ${selectedOrder.items}">
+              <td class="td-meta" th:text="${iter.index + 1}"></td>
+              <td th:text="${it.name}"></td>
+              <td style="text-align:right" class="td-mono"
+                  th:text="${#numbers.formatDecimal(it.quantity,1,2)}"></td>
+              <td th:text="${it.unit}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="pagination" th:if="${orders.totalPages > 1}">
+      <a class="btn btn-ghost btn-sm" th:unless="${orders.first}"
+         th:href="@{/supplier-orders(page=${orders.number-1},supplierId=${filterSupplier},
+                     status=${filterStatus},from=${from},to=${to})}">← Назад</a>
+      <span class="page-info"
+            th:text="'Страница ' + (${orders.number+1}) + ' из ' + ${orders.totalPages}"></span>
+      <a class="btn btn-ghost btn-sm" th:unless="${orders.last}"
+         th:href="@{/supplier-orders(page=${orders.number+1},supplierId=${filterSupplier},
+                     status=${filterStatus},from=${from},to=${to})}">Вперёд →</a>
+    </div>
+  </main>
 </div>
 <script th:src="@{/js/main.js}"></script>
 </body>

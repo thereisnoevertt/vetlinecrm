@@ -28,12 +28,23 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID>,
                 predicates.add(cb.equal(root.get("manager").get("id"), managerId));
             }
             if (search != null && !search.isBlank()) {
-                String pattern = "%" + search.toLowerCase() + "%";
+                // Поиск регистронезависимый по подстроке:
+                //   • номер заявки (например, «141» найдёт VL-2026-000141);
+                //   • ФИО клиента — фамилия / имя / отчество в любом порядке;
+                //   • телефон (по точной подстроке, чтобы найти и
+                //     «+7(495)123-45-67», и «4951234567»);
+                //   • название организации (актуально для архива:
+                //     часто помнят «ООО Виталиник», а не ФИО менеджера);
+                //   • email клиента.
+                String pattern = "%" + search.toLowerCase().trim() + "%";
+                String phoneRaw = search.trim();
                 var client = root.get("client");
                 predicates.add(cb.or(
-                    cb.like(cb.lower(root.get("number")), pattern),
-                    cb.like(cb.lower(client.get("fullName")), pattern),
-                    cb.like(client.get("phone"), "%" + search + "%")
+                    cb.like(cb.lower(root.get("number")),         pattern),
+                    cb.like(cb.lower(client.get("fullName")),     pattern),
+                    cb.like(client.get("phone"),                  "%" + phoneRaw + "%"),
+                    cb.like(cb.lower(cb.coalesce(client.get("organization"), "")), pattern),
+                    cb.like(cb.lower(cb.coalesce(client.get("email"),        "")), pattern)
                 ));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -42,6 +53,14 @@ public interface TicketRepository extends JpaRepository<Ticket, UUID>,
     }
 
     long countByCreatedAtBetweenAndArchived(LocalDateTime from, LocalDateTime to, boolean archived);
+
+    /** Все заявки клиента (включая архивные), новые сверху — для карточки клиента. */
+    @Query("SELECT t FROM Ticket t WHERE t.client.id = :clientId ORDER BY t.createdAt DESC")
+    List<Ticket> findByClientOrderByCreatedAtDesc(@Param("clientId") UUID clientId);
+
+    /** Количество заявок в разрезе клиентов — для столбца «Заявок» в списке клиентов. */
+    @Query("SELECT t.client.id, COUNT(t) FROM Ticket t GROUP BY t.client.id")
+    List<Object[]> countTicketsGroupedByClient();
 
     @Query("""
         SELECT t.status, COUNT(t) FROM Ticket t

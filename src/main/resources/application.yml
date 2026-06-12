@@ -37,10 +37,11 @@ server:
 
 vk:
   group:
-    # Access-токен сообщества с правами messages, manage
-    token: ${VK_GROUP_TOKEN:REPLACE_ME}
+    # Access-токен сообщества с правами messages, manage.
+    # Задаётся ТОЛЬКО через переменную окружения VK_GROUP_TOKEN (в репозиторий не коммитится).
+    token: ${VK_GROUP_TOKEN:}
     # Числовой идентификатор сообщества (без минуса)
-    id: ${VK_GROUP_ID:0}
+    id: ${VK_GROUP_ID:238759288}
     # Версия VK API
     api-version: ${VK_API_VERSION:5.199}
 

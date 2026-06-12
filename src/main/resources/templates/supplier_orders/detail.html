@@ -7,98 +7,107 @@
   <link rel="stylesheet" th:href="@{/css/main.css}"/>
 </head>
 <body>
-<div th:replace="~{fragments :: navbar('supplier-orders')}"></div>
+<div class="app">
+  <div th:replace="~{fragments :: sidebar('supplier-orders')}"></div>
+  <div th:replace="~{fragments :: topbar('Карточка заказа поставщику')}"></div>
 
-<div class="container" style="max-width:980px">
-  <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
-  <div th:if="${error}"   class="alert alert-error"   th:text="${error}"></div>
+  <main class="content content-medium">
+    <div th:if="${success}" class="alert alert-success"><span th:text="${success}"></span></div>
+    <div th:if="${error}" class="alert alert-error"><span th:text="${error}"></span></div>
 
-  <div class="page-header">
-    <div>
-      <a th:href="@{/supplier-orders}" class="back-link">← К списку заказов</a>
-      <h1>Заказ <span th:text="${order.number}"></span>
-        <span class="badge" th:classappend="${order.status.badgeClass}"
-              th:text="${order.status.displayName}" style="vertical-align:middle"></span>
-      </h1>
-    </div>
-    <div class="header-actions" sec:authorize="hasAnyRole('MANAGER','DIRECTOR')"
-         th:if="${!statuses.isEmpty()}">
-      <form th:action="@{/supplier-orders/{id}/status(id=${order.id})}"
-            method="post" class="inline-form">
-        <select name="newStatus" class="input input-sm" required>
-          <option value="" disabled selected hidden>Изменить статус...</option>
-          <option th:each="s : ${statuses}"
-                  th:value="${s.name()}" th:text="${s.displayName}"></option>
-        </select>
-        <button class="btn btn-primary btn-sm">Применить</button>
-      </form>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header"><h3>Реквизиты заказа</h3></div>
-    <div class="card-body field-grid-2">
-      <div class="field">
-        <label>Поставщик</label>
-        <span th:text="${order.supplier.name}"></span>
-        <small class="text-muted" th:if="${order.supplier.country != null}"
-               th:text="' (' + ${order.supplier.country} + ')'"></small>
+    <div class="page-head">
+      <div>
+        <a th:href="@{/supplier-orders}" class="back-link">
+          <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="19" y1="12" x2="5" y2="12"/>
+            <polyline points="12 19 5 12 12 5"/>
+          </svg>
+          К списку заказов
+        </a>
+        <h1>
+          Заказ <span class="text-mono" th:text="${order.number}"></span>
+          <span class="badge no-dot" th:classappend="${order.status.badgeClass}"
+                th:text="${order.status.displayName}"
+                style="vertical-align:middle;margin-left:8px;font-size:12px"></span>
+        </h1>
+        <div class="lead" th:text="${order.supplier.name}"></div>
       </div>
-      <div class="field">
-        <label>Контактное лицо поставщика</label>
-        <span th:text="${order.supplier.contactPerson ?: '—'}"></span>
-        <small th:if="${order.supplier.phone != null}" class="text-muted"
-               th:text="' • ' + ${order.supplier.phone}"></small>
-      </div>
-      <div class="field">
-        <label>Заявка-основание</label>
-        <a th:if="${order.ticket != null}"
-           th:href="@{/tickets/{id}(id=${order.ticket.id})}"
-           th:text="${'#' + order.ticket.number + ' — ' + order.ticket.client.fullName}"></a>
-        <span th:if="${order.ticket == null}" class="text-muted">не привязана</span>
-      </div>
-      <div class="field">
-        <label>Ответственный</label>
-        <span th:text="${order.manager.fullName}"></span>
-      </div>
-      <div class="field">
-        <label>Дата создания</label>
-        <span th:text="${#temporals.format(order.createdAt,'dd.MM.yyyy HH:mm')}"></span>
-      </div>
-      <div class="field">
-        <label>Последнее обновление</label>
-        <span th:text="${#temporals.format(order.updatedAt,'dd.MM.yyyy HH:mm')}"></span>
-      </div>
-      <div class="field" style="grid-column:span 2">
-        <label>Примечание</label>
-        <p class="field-text" th:text="${order.notes ?: '—'}"></p>
+      <div class="page-actions" sec:authorize="hasAnyRole('MANAGER','DIRECTOR')"
+           th:if="${!statuses.isEmpty()}">
+        <form th:action="@{/supplier-orders/{id}/status(id=${order.id})}"
+              method="post" class="inline-form">
+          <select name="newStatus" class="input input-sm" required style="min-width:200px">
+            <option value="" disabled selected hidden>Изменить статус...</option>
+            <option th:each="s : ${statuses}"
+                    th:value="${s.name()}" th:text="${s.displayName}"></option>
+          </select>
+          <button class="btn btn-primary btn-sm">Применить</button>
+        </form>
       </div>
     </div>
-  </div>
 
-  <div class="card">
-    <div class="card-header"><h3>Товарные позиции</h3></div>
-    <div class="card-body" style="padding:0">
-      <table class="table">
-        <thead>
-          <tr>
-            <th style="width:40px">№</th>
-            <th>Наименование товара</th>
-            <th style="width:120px;text-align:right">Кол-во</th>
-            <th style="width:100px">Ед. изм.</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr th:each="it,iter : ${order.items}">
-            <td th:text="${iter.index + 1}"></td>
-            <td th:text="${it.name}"></td>
-            <td style="text-align:right" th:text="${#numbers.formatDecimal(it.quantity,1,2)}"></td>
-            <td th:text="${it.unit}"></td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="card">
+      <div class="card-head"><h3>Реквизиты заказа</h3></div>
+      <div class="card-body">
+        <div class="field-grid-2">
+          <div class="field"><label>Поставщик</label>
+            <div class="field-text">
+              <span th:text="${order.supplier.name}"></span>
+              <span th:if="${order.supplier.country != null}" class="text-muted"
+                    th:text="' (' + ${order.supplier.country} + ')'"></span>
+            </div>
+          </div>
+          <div class="field"><label>Контактное лицо поставщика</label>
+            <div class="field-text">
+              <span th:text="${order.supplier.contactPerson ?: '—'}"></span>
+              <span th:if="${order.supplier.phone != null}" class="text-muted text-mono"
+                    th:text="' • ' + ${order.supplier.phone}"></span>
+            </div>
+          </div>
+          <div class="field"><label>Заявка-основание</label>
+            <a th:if="${order.ticket != null}" class="link-strong"
+               th:href="@{/tickets/{id}(id=${order.ticket.id})}"
+               th:text="${order.ticket.number + ' — ' + order.ticket.client.fullName}"></a>
+            <span th:if="${order.ticket == null}" class="text-muted">не привязана</span>
+          </div>
+          <div class="field"><label>Ответственный</label>
+            <div class="field-text" th:text="${order.manager.fullName}"></div></div>
+          <div class="field"><label>Создан</label>
+            <div class="field-text" th:text="${#temporals.format(order.createdAt,'dd.MM.yyyy HH:mm')}"></div></div>
+          <div class="field"><label>Обновлён</label>
+            <div class="field-text" th:text="${#temporals.format(order.updatedAt,'dd.MM.yyyy HH:mm')}"></div></div>
+          <div class="field" style="grid-column:span 2"><label>Примечание</label>
+            <div class="field-text" th:text="${order.notes ?: '—'}"></div></div>
+        </div>
+      </div>
     </div>
-  </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Товарные позиции</h3></div>
+      <div class="card-body flush">
+        <table class="table">
+          <thead>
+            <tr>
+              <th style="width:40px">№</th>
+              <th>Наименование товара</th>
+              <th style="width:120px;text-align:right">Кол-во</th>
+              <th style="width:100px">Ед. изм.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="it,iter : ${order.items}">
+              <td class="td-meta" th:text="${iter.index + 1}"></td>
+              <td th:text="${it.name}"></td>
+              <td style="text-align:right" class="td-mono"
+                  th:text="${#numbers.formatDecimal(it.quantity,1,2)}"></td>
+              <td th:text="${it.unit}"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
 </div>
 <script th:src="@{/js/main.js}"></script>
 </body>
